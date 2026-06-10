@@ -193,7 +193,7 @@ export default function HomePage() {
 }
 
 // 工具卡片组件（首页用）
-import { ExternalLink, Gift } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 import { Tool } from '@/lib/data/tools';
 
 function ToolCard({ tool, showCategory = false }: { tool: Tool; showCategory?: boolean }) {
