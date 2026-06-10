@@ -1,0 +1,108 @@
+import Link from 'next/link';
+import { Search, Tag, Newspaper, Wrench, Gift, FileText, Menu } from 'lucide-react';
+
+const NAV = [
+  { href: '/', label: '首页' },
+  { href: '/articles', label: '文章' },
+  { href: '/news', label: '资讯' },
+  { href: '/deals', label: '优惠活动' },
+  { href: '/tools', label: '实用工具' },
+];
+
+export function Header() {
+  return (
+    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="flex items-center justify-between h-16">
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-2 group">
+            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white font-bold text-lg shadow-md">
+              跨
+            </div>
+            <div>
+              <div className="font-bold text-slate-900 leading-tight">跨境工具说</div>
+              <div className="text-[10px] text-slate-500 leading-tight">kjgjs.cn</div>
+            </div>
+          </Link>
+
+          {/* 主导航 */}
+          <nav className="hidden md:flex items-center gap-1">
+            {NAV.map(item => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:text-brand-600 hover:bg-brand-50 transition-colors"
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+
+          {/* 搜索框 */}
+          <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-lg w-64">
+            <Search className="w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="搜索工具、文章..."
+              className="bg-transparent flex-1 text-sm outline-none placeholder:text-slate-400"
+            />
+          </div>
+
+          {/* 移动端菜单 */}
+          <button className="md:hidden p-2 text-slate-600">
+            <Menu className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+export function Footer() {
+  return (
+    <footer className="bg-slate-900 text-slate-400 mt-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white font-bold">跨</div>
+              <div className="font-bold text-white">跨境工具说</div>
+            </div>
+            <p className="text-sm leading-relaxed">
+              为跨境卖家精选的工具导航、热门资讯、优惠活动。
+            </p>
+          </div>
+          <div>
+            <h4 className="font-medium text-white mb-3 text-sm">工具分类</h4>
+            <ul className="space-y-2 text-sm">
+              <li><Link href="/tools?cat=ERP" className="hover:text-white">ERP管理</Link></li>
+              <li><Link href="/tools?cat=选品" className="hover:text-white">选品工具</Link></li>
+              <li><Link href="/tools?cat=关键词" className="hover:text-white">关键词</Link></li>
+              <li><Link href="/tools?cat=物流" className="hover:text-white">物流跟踪</Link></li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="font-medium text-white mb-3 text-sm">内容</h4>
+            <ul className="space-y-2 text-sm">
+              <li><Link href="/articles" className="hover:text-white">精选文章</Link></li>
+              <li><Link href="/news" className="hover:text-white">行业资讯</Link></li>
+              <li><Link href="/deals" className="hover:text-white">优惠活动</Link></li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="font-medium text-white mb-3 text-sm">关注我们</h4>
+            <ul className="space-y-2 text-sm">
+              <li>公众号：跨境工具说</li>
+              <li>小红书：跨境工具说</li>
+              <li>知乎：跨境工具说</li>
+              <li>雨果网：跨境工具说</li>
+            </ul>
+          </div>
+        </div>
+        <div className="border-t border-slate-800 mt-8 pt-6 text-xs text-center">
+          <p>© 2026 kjgjs.cn 跨境工具说 · 用心服务每一位跨境卖家</p>
+        </div>
+      </div>
+    </footer>
+  );
+}

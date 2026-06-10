@@ -1,0 +1,33 @@
+# 依赖
+node_modules/
+.pnp
+.pnp.js
+
+# 构建
+.next/
+out/
+build/
+dist/
+
+# 测试
+coverage/
+
+# 环境
+.env
+.env*.local
+
+# 日志
+*.log
+npm-debug.log*
+
+# 编辑器
+.vscode/
+.idea/
+.DS_Store
+
+# Next.js
+next-env.d.ts
+.vercel
+
+# TypeScript
+*.tsbuildinfo
