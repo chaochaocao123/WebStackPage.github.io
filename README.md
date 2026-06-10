@@ -1,20 +1,23 @@
 # kjgjs.cn 跨境工具说
 
 > 跨境电商卖家工具导航 + 资讯 + 优惠平台
-> Next.js 14 + Tailwind CSS + Prisma
-> 部署：Vercel（备案后迁国内云服务器）
+> Next.js 14 + Tailwind CSS + Prisma (SQLite/Neon Postgres)
+> 部署：Vercel
 
 ## 快速开始
 
 ```bash
-# 安装依赖
+# 安装依赖（会自动运行 prisma generate）
 npm install
+
+# 初始化数据库（创建表结构）
+npm run db:push
+
+# 导入种子数据（69 工具 + 20 分类）
+npm run db:seed
 
 # 开发
 npm run dev
-
-# 构建
-npm run build
 
 # 生产运行
 npm start
@@ -22,58 +25,87 @@ npm start
 
 访问 http://localhost:3000
 
+## 后台管理
+
+访问 http://localhost:3000/admin
+
+- 默认密码：`kjgjs2026`（生产环境请修改）
+- 可管理：工具、分类、文章、优惠、广告位
+
+## 数据库
+
+- **开发环境**：SQLite (`dev.db`)
+- **生产环境**：Neon Postgres（需要配置环境变量）
+
+```bash
+# 查看数据库（浏览器打开）
+npm run db:studio
+```
+
+## 生产环境部署
+
+Vercel 部署时需要配置以下环境变量：
+
+| 环境变量 | 说明 | 示例 |
+|---------|------|------|
+| `DATABASE_URL` | Neon Postgres 连接串 | `postgresql://user:pass@host/db` |
+| `ADMIN_PASSWORD` | 后台登录密码 | `your-strong-password` |
+| `SESSION_SECRET` | Session 签名密钥（32位+） | `change-me-in-production` |
+
+### Neon Postgres 接入步骤
+
+1. 注册 [Neon](https://neon.tech/)，创建项目
+2. 获取连接串，格式：`postgresql://user:pass@host/db?sslmode=require`
+3. 在 Vercel 项目设置中添加 `DATABASE_URL` 环境变量
+4. 首次部署后运行 `npx prisma db push` 同步表结构
+
 ## 目录结构
 
 ```
 kjgjs-site/
-├── app/                    # Next.js App Router
-│   ├── page.tsx           # 首页（工具导航）
+├── app/
+│   ├── page.tsx           # 首页（从数据库读取）
 │   ├── articles/          # 文章
 │   ├── news/              # 资讯
 │   ├── deals/             # 优惠活动
 │   ├── tools/             # 实用工具
-│   │   ├── fba-calculator/  # FBA 利润计算器
-│   │   ├── unit-converter/  # 单位换算
-│   │   └── exchange-rate/   # 汇率转换
-│   ├── layout.tsx         # 全局布局
-│   ├── globals.css        # 全局样式
-│   ├── sitemap.ts         # SEO
-│   └── robots.ts
-├── components/
-│   ├── layout.tsx         # Header / Footer
-│   └── tool-grid.tsx      # 工具卡片网格
+│   │   ├── fba-calculator/
+│   │   ├── unit-converter/
+│   │   └── exchange-rate/
+│   ├── admin/             # 后台管理
+│   │   ├── login/         # 登录页
+│   │   ├── tools/         # 工具管理
+│   │   ├── categories/    # 分类管理
+│   │   ├── articles/      # 文章管理
+│   │   ├── deals/         # 优惠管理
+│   │   └── ads/           # 广告位管理
+│   └── layout.tsx
+├── components/            # UI 组件
 ├── lib/
+│   ├── db.ts              # Prisma 单例
 │   └── data/
-│       ├── tools.ts       # 工具库（69个工具）
-│       ├── articles.ts    # 文章
-│       ├── news.ts        # 资讯
-│       └── deals.ts       # 优惠
-├── prisma/                # 数据库（待接入）
-├── scripts/               # 抓取脚本（待开发）
-├── public/
-└── package.json
+│       ├── tools.ts       # 原始工具数据（参考）
+│       └── tools-db.ts    # 数据库读取层
+├── prisma/
+│   └── schema.prisma     # 数据模型
+├── scripts/
+│   └── seed.ts           # 种子数据导入
+└── middleware.ts          # 后台鉴权中间件
 ```
 
-## 阶段规划
+## 数据模型
 
-- ✅ **阶段一 MVP**：首页工具导航 + 5 个菜单静态展示 + 3 个实用工具
-- ⏳ **阶段二 动态内容**：amz123/mjzj 资讯抓取 + 工具官网优惠抓取 + 定时任务
-- ⏳ **阶段三 稳定运营**：公众号文章自动同步 + 数据统计 + 迁移国内服务器
+- **Category**：分类（key, label, sort）
+- **Tool**：工具（name, url, business, affiliateUrl, discount, featured）
+- **Article**：文章（slug, title, content, excerpt, author, viewCount）
+- **Deal**：优惠（title, url, brand, discount, startDate, endDate）
+- **AdSpot**：广告位（key, name, imageUrl, linkUrl, active）
 
-## 数据来源
+## 后续加新工具流程
 
-- 工具列表：跨境工具说联盟营销账号表（69个）
-- 资讯：amz123 / mjzj / wearesellers / cifnews（待抓取）
-- 优惠：各工具厂商官网（待抓取）
-- 文章：公众号「跨境工具说」（手动导入）
-
-## 待办
-
-- [ ] 安装依赖、跑通构建
-- [ ] 部署到 Vercel
-- [ ] 接入 kjgjs.cn 域名
-- [ ] 抓取脚本（阶段二）
-- [ ] 后台管理（阶段二）
-- [ ] 迁移到国内云服务器（备案后）
+1. 访问 `/admin`
+2. 登录后进入「工具管理」
+3. 点击「添加工具」，填写表单
+4. 保存后首页自动更新
 
 最后更新：2026-06-10

@@ -1,16 +1,21 @@
+import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Header, Footer } from '@/components/layout';
 import { ToolGrid } from '@/components/tool-grid';
 import { ToolCard } from '@/components/tool-card';
-import { CATEGORIES, TOOLS } from '@/lib/data/tools';
+import { getTools, getCategories } from '@/lib/data/tools-db';
 import { TrendingUp, FileText, Newspaper, Gift, Wrench, BookOpen, ChevronRight, Sparkles, Zap, MessageCircle } from 'lucide-react';
 
 // 首页 - 工具导航为主
-export default function HomePage() {
+export default async function HomePage() {
+  // 从数据库获取数据
+  const tools = await getTools();
+  const categories = await getCategories();
+  
   // 取部分推荐工具到 Hero 区
-  const featuredTools = TOOLS.filter(t => t.discount).slice(0, 8);
+  const featuredTools = tools.filter((t: any) => t.discount).slice(0, 8);
   // 头条分类（首页首屏展示）
-  const topCategories = CATEGORIES.filter(c => c.key !== 'all').slice(0, 8);
+  const topCategories = categories.filter((c: any) => c.key !== 'all').slice(0, 8);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -34,7 +39,7 @@ export default function HomePage() {
                   </span>
                 </h1>
                 <p className="text-slate-600 text-base md:text-lg leading-relaxed mb-6 max-w-2xl">
-                  精选 69+ 跨境电商常用工具，覆盖 ERP、选品、关键词、物流、AI 作图、TikTok 运营等全流程。
+                  精选 {tools.length}+ 跨境电商常用工具，覆盖 ERP、选品、关键词、物流、AI 作图、TikTok 运营等全流程。
                   点击直达官网或获取专属优惠。
                 </p>
                 <div className="flex flex-wrap gap-3">
@@ -54,17 +59,17 @@ export default function HomePage() {
                 {/* 统计卡片 */}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-white border border-slate-200 rounded-xl p-4">
-                    <div className="text-2xl font-bold text-brand-600">{TOOLS.length}+</div>
+                    <div className="text-2xl font-bold text-brand-600">{tools.length}+</div>
                     <div className="text-xs text-slate-500 mt-1">精选工具</div>
                   </div>
                   <div className="bg-white border border-slate-200 rounded-xl p-4">
                     <div className="text-2xl font-bold text-accent-500">
-                      {TOOLS.filter(t => t.discount).length}
+                      {tools.filter((t: any) => t.discount).length}
                     </div>
                     <div className="text-xs text-slate-500 mt-1">限时优惠</div>
                   </div>
                   <div className="bg-white border border-slate-200 rounded-xl p-4">
-                    <div className="text-2xl font-bold text-slate-900">{CATEGORIES.length - 1}</div>
+                    <div className="text-2xl font-bold text-slate-900">{categories.length - 1}</div>
                     <div className="text-xs text-slate-500 mt-1">工具分类</div>
                   </div>
                   <div className="bg-white border border-slate-200 rounded-xl p-4">
@@ -83,7 +88,7 @@ export default function HomePage() {
 
             {/* 快捷分类入口 */}
             <div className="mt-8 flex flex-wrap gap-2">
-              {topCategories.map(cat => (
+              {topCategories.map((cat: any) => (
                 <a
                   key={cat.key}
                   href={`#cat-${cat.key}`}
@@ -112,7 +117,7 @@ export default function HomePage() {
               </Link>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-              {featuredTools.map(tool => (
+              {featuredTools.map((tool: any) => (
                 <ToolCard key={tool.name} tool={tool} showCategory={true} />
               ))}
             </div>
@@ -129,7 +134,7 @@ export default function HomePage() {
               <h2 className="text-xl font-bold text-slate-900">全部工具</h2>
             </div>
             <div className="text-sm text-slate-500">
-              收录 <span className="font-semibold text-slate-900">{TOOLS.length}</span> 个
+              收录 <span className="font-semibold text-slate-900">{tools.length}</span> 个
             </div>
           </div>
           <ToolGrid />

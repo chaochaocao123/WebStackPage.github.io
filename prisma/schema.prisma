@@ -1,0 +1,88 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// 分类
+model Category {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique // 例如 "ERP管理系统"
+  label     String
+  sort      Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tools Tool[]
+}
+
+// 工具
+model Tool {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  url         String   // 工具官网
+  business    String   // 业务描述
+  categoryKey String   // FK → Category.key
+  affiliateUrl String // 联盟推广链接
+  discount    String   @default("")
+  logo        String?  // 工具 logo URL
+  featured    Boolean  @default(false) // 是否首页推荐
+  sort        Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  category Category @relation(fields: [categoryKey], references: [key])
+}
+
+// 文章
+model Article {
+  id          Int      @id @default(autoincrement())
+  slug        String   @unique
+  title       String
+  content     String   // Text
+  excerpt     String
+  cover       String?
+  category    String?
+  tags        String   @default("[]") // JSON string
+  source      String?
+  sourceType  String   @default("manual")
+  author      String   @default("跨境工具说")
+  publishedAt DateTime @default(now())
+  viewCount   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// 优惠
+model Deal {
+  id          Int      @id @default(autoincrement())
+  title       String
+  url         String
+  brand       String
+  brandLogo   String?
+  category    String?
+  discount    String?
+  description String   // Text
+  startDate   DateTime?
+  endDate     DateTime?
+  source      String   @default("manual")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// 广告位
+model AdSpot {
+  id       Int     @id @default(autoincrement())
+  key      String  @unique
+  name     String
+  imageUrl String
+  linkUrl  String
+  active   Boolean @default(true)
+  sort     Int     @default(0)
+}
