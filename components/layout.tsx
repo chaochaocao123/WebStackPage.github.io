@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, Menu, X } from 'lucide-react';
+import { Search, Menu, X, Video, MessageCircle } from 'lucide-react';
 
 const NAV = [
   { href: '/', label: '首页' },
@@ -13,13 +13,10 @@ const NAV = [
   { href: '/tools', label: '实用工具' },
 ];
 
-// 二维码数据
+// 二维码数据（只保留公众号和视频号）
 const QR_CODES = [
-  { name: '小红书', src: '/images/qrcode/xiaohongshu.jpeg', alt: '小红书二维码' },
-  { name: '知乎', src: '/images/qrcode/zhihu.jpeg', alt: '知乎二维码' },
-  { name: '视频号', src: '/images/qrcode/shipinhao.jpeg', alt: '视频号二维码' },
-  { name: '公众号', src: '/images/qrcode/gongzhonghao.jpeg', alt: '公众号二维码' },
-  { name: '抖音', src: '/images/qrcode/douyin.png', alt: '抖音二维码' },
+  { key: 'gongzhonghao', name: '公众号', src: '/images/qrcode/gongzhonghao.jpeg', desc: '扫码关注公众号' },
+  { key: 'shipinhao', name: '视频号', src: '/images/qrcode/shipinhao.jpeg', desc: '扫码关注视频号' },
 ];
 
 export function Header() {
@@ -127,43 +124,66 @@ export function Header() {
   );
 }
 
-// 优化3：右下角悬浮二维码按钮组
+// 右下角悬浮：公众号 + 视频号 两个独立按钮，点开各自弹窗
 export function QrCodeFloat() {
-  const [isOpen, setIsOpen] = useState(false);
+  const [openKey, setOpenKey] = useState<string | null>(null);
+
+  const toggle = (key: string) => {
+    setOpenKey(prev => (prev === key ? null : key));
+  };
 
   return (
-    <div className="fixed right-4 bottom-4 z-40">
-      {/* 二维码展示面板 */}
-      {isOpen && (
-        <div className="absolute bottom-14 right-0 bg-white rounded-xl shadow-2xl p-4 border border-slate-200 w-64 animate-in fade-in slide-in-from-bottom-2 duration-200">
-          <div className="text-sm font-semibold text-slate-900 mb-3 text-center">扫码关注我们</div>
-          <div className="grid grid-cols-2 gap-3">
-            {QR_CODES.map((qr) => (
-              <div key={qr.name} className="text-center">
-                <img 
-                  src={qr.src} 
-                  alt={qr.alt}
-                  className="w-24 h-24 mx-auto rounded-lg object-cover border border-slate-100"
+    <div className="fixed right-4 bottom-4 z-40 flex flex-col items-end gap-3">
+      {QR_CODES.map(({ key, name, src, desc }) => {
+        const Icon = key === 'shipinhao' ? Video : MessageCircle;
+        const isOpen = openKey === key;
+        return (
+          <div key={key} className="relative flex items-center gap-2">
+            {/* 二维码弹窗（在按钮左侧） */}
+            {isOpen && (
+              <div className="absolute right-14 bottom-0 bg-white rounded-xl shadow-2xl p-3 border border-slate-200 w-44 animate-in fade-in slide-in-from-right-2 duration-200">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-sm font-semibold text-slate-900">{name}</div>
+                  <button
+                    onClick={() => setOpenKey(null)}
+                    className="text-slate-400 hover:text-slate-700"
+                    aria-label="关闭"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <img
+                  src={src}
+                  alt={name}
+                  className="w-full h-auto rounded-lg bg-white"
                 />
-                <div className="text-xs text-slate-600 mt-1">{qr.name}</div>
+                <div className="text-[11px] text-slate-500 mt-2 text-center">{desc}</div>
               </div>
-            ))}
+            )}
+
+            {/* 文字标签（hover 显示，或者打开时一直显示） */}
+            {isOpen && (
+              <span className="text-xs font-medium text-slate-700 bg-white/90 border border-slate-200 rounded-full px-2 py-1 shadow-sm">
+                {name}
+              </span>
+            )}
+
+            {/* 悬浮按钮 */}
+            <button
+              onClick={() => toggle(key)}
+              className={`w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-all ${
+                isOpen
+                  ? 'bg-brand-600 text-white scale-105'
+                  : 'bg-white border border-slate-200 text-slate-700 hover:border-brand-400 hover:text-brand-600'
+              }`}
+              aria-label={name}
+              title={name}
+            >
+              <Icon className="w-5 h-5" />
+            </button>
           </div>
-        </div>
-      )}
-      
-      {/* 悬浮按钮 */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-12 h-12 bg-gradient-to-br from-brand-500 to-brand-700 rounded-full shadow-lg flex items-center justify-center text-white hover:shadow-xl transition-shadow"
-        aria-label="关注我们"
-      >
-        {isOpen ? <X className="w-5 h-5" /> : (
-          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
-          </svg>
-        )}
-      </button>
+        );
+      })}
     </div>
   );
 }

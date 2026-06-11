@@ -220,44 +220,42 @@ function MarqueeNews() {
   ];
 
   return (
-    <section className="bg-gradient-to-r from-brand-600 to-brand-700 py-3 overflow-hidden">
+    <section className="py-5">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 overflow-hidden">
           {/* 标签 */}
-          <div className="flex-shrink-0 flex items-center gap-2 px-3 py-1 bg-white/20 rounded-full">
+          <div className="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1 bg-brand-600 rounded-md">
             <TrendingUp className="w-3.5 h-3.5 text-white" />
             <span className="text-xs font-medium text-white">跨境快讯</span>
           </div>
-          
+
           {/* 滚动区域 */}
           <div className="relative flex-1 overflow-hidden">
             <div className="animate-marquee whitespace-nowrap">
               {[...mockNews, ...mockNews].map((item, idx) => (
                 <span key={`${item.id}-${idx}`} className="inline-flex items-center">
-                  <a 
-                    href="/news" 
-                    className="text-sm text-white/90 hover:text-white transition-colors"
+                  <a
+                    href="/news"
+                    className="text-sm text-slate-700 hover:text-brand-600 transition-colors"
                   >
                     {item.title}
                   </a>
-                  <span className="mx-4 text-white/40">|</span>
+                  <span className="mx-4 text-slate-300">|</span>
                 </span>
               ))}
             </div>
           </div>
-          
+
           {/* 更多按钮 */}
-          <Link 
-            href="/news" 
-            className="flex-shrink-0 text-xs text-white/80 hover:text-white transition-colors flex items-center gap-1"
+          <Link
+            href="/news"
+            className="flex-shrink-0 text-xs text-slate-500 hover:text-brand-600 transition-colors flex items-center gap-1"
           >
             更多
             <ChevronRight className="w-3 h-3" />
           </Link>
         </div>
       </div>
-      
-
     </section>
   );
 }
