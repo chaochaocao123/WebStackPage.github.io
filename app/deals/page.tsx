@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Header, Footer } from '@/components/layout';
 import { Gift, ExternalLink, Clock, Tag, Flame } from 'lucide-react';
-import { DEALS } from '@/lib/data/deals';
+import { getDealsFromDB, DealItem } from '@/lib/data/deals';
 import { TOOLS } from '@/lib/data/tools';
 
 export const metadata = {
@@ -9,14 +9,17 @@ export const metadata = {
   description: '跨境电商工具最新优惠活动，专属折扣码',
 };
 
-// 把 DEALS 关联到 TOOLS 信息（图标等）
-function enrichDeal(deal: typeof DEALS[number]) {
-  const tool = TOOLS.find(t => t.name === deal.brand || t.affiliateUrl === deal.url);
+// 把 Deal 关联到 TOOLS 信息（图标等）
+function enrichDeal(deal: DealItem) {
+  const tool = TOOLS.find(
+    (t) => t.name === deal.brand || t.affiliateUrl === deal.url
+  );
   return { ...deal, tool };
 }
 
-export default function DealsPage() {
-  const deals = DEALS.map(enrichDeal);
+export default async function DealsPage() {
+  const dbDeals = await getDealsFromDB();
+  const deals = dbDeals.map(enrichDeal);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -57,7 +60,7 @@ export default function DealsPage() {
   );
 }
 
-function DealCard({ deal }: { deal: any }) {
+function DealCard({ deal }: { deal: DealItem & { tool?: typeof TOOLS[number] | undefined } }) {
   return (
     <a
       href={deal.url}
