@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/db';
-import { Plus, ExternalLink, Trash2 } from 'lucide-react';
+import { Plus, ExternalLink } from 'lucide-react';
 import { deleteArticle } from '../actions';
+import { DeleteRowButton } from '../_components/DeleteWithConfirm';
 
 export default async function ArticlesPage() {
   const articles = await prisma.article.findMany({
@@ -75,19 +76,10 @@ export default async function ArticlesPage() {
                       >
                         编辑
                       </Link>
-                      <form action={deleteArticle.bind(null, article.id)}>
-                        <button
-                          type="submit"
-                          className="p-1.5 text-slate-400 hover:text-red-600"
-                          onClick={(e) => {
-                            if (!confirm('确定要删除这篇文章吗？')) {
-                              e.preventDefault();
-                            }
-                          }}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </form>
+                      <DeleteRowButton
+                        formAction={deleteArticle.bind(null, article.id)}
+                        message="确定要删除这篇文章吗？"
+                      />
                     </div>
                   </td>
                 </tr>

@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/db';
-import { Plus, ExternalLink, Trash2, Pin } from 'lucide-react';
+import { Plus, ExternalLink, Pin } from 'lucide-react';
 import { deleteNews, togglePinNews } from '../actions';
+import { DeleteRowButton } from '../_components/DeleteWithConfirm';
 
 const SOURCE_LABEL: Record<string, string> = {
   manual: '跨境工具说',
@@ -116,19 +117,10 @@ export default async function NewsPage() {
                       >
                         编辑
                       </Link>
-                      <form action={deleteNews.bind(null, item.id)}>
-                        <button
-                          type="submit"
-                          className="p-1.5 text-slate-400 hover:text-red-600"
-                          onClick={(e) => {
-                            if (!confirm(`确定要删除「${item.title}」吗？`)) {
-                              e.preventDefault();
-                            }
-                          }}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </form>
+                      <DeleteRowButton
+                        formAction={deleteNews.bind(null, item.id)}
+                        message={`确定要删除「${item.title}」吗？`}
+                      />
                     </div>
                   </td>
                 </tr>

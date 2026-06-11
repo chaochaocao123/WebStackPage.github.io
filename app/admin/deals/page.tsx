@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/db';
-import { Plus, ExternalLink, Trash2 } from 'lucide-react';
+import { Plus, ExternalLink } from 'lucide-react';
 import { deleteDeal } from '../actions';
+import { DeleteRowButton } from '../_components/DeleteWithConfirm';
 
 export default async function DealsPage() {
   const deals = await prisma.deal.findMany({
@@ -82,19 +83,10 @@ export default async function DealsPage() {
                       >
                         编辑
                       </Link>
-                      <form action={deleteDeal.bind(null, deal.id)}>
-                        <button
-                          type="submit"
-                          className="p-1.5 text-slate-400 hover:text-red-600"
-                          onClick={(e) => {
-                            if (!confirm('确定要删除这个优惠吗？')) {
-                              e.preventDefault();
-                            }
-                          }}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </form>
+                      <DeleteRowButton
+                        formAction={deleteDeal.bind(null, deal.id)}
+                        message="确定要删除这个优惠吗？"
+                      />
                     </div>
                   </td>
                 </tr>

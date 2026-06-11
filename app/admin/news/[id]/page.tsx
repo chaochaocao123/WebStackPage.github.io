@@ -2,7 +2,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/db';
 import { updateNews, deleteNews } from '../../actions';
-import { ArrowLeft, Trash2 } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
+import { DeletePageButton } from '../../_components/DeleteWithConfirm';
 
 const SOURCE_LABEL: Record<string, string> = {
   manual: '跨境工具说',
@@ -174,20 +175,11 @@ export default async function EditNewsPage({
 
         {/* 删除按钮 */}
         <div className="mt-8 pt-6 border-t border-slate-200">
-          <form action={deleteNews.bind(null, id)}>
-            <button
-              type="submit"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition"
-              onClick={(e) => {
-                if (!confirm(`确定要删除「${item.title}」吗？`)) {
-                  e.preventDefault();
-                }
-              }}
-            >
-              <Trash2 className="w-4 h-4" />
-              删除资讯
-            </button>
-          </form>
+          <DeletePageButton
+            formAction={deleteNews.bind(null, id)}
+            message={`确定要删除「${item.title}」吗？`}
+            label="删除资讯"
+          />
         </div>
       </div>
     </div>

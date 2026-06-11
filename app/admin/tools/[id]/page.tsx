@@ -2,7 +2,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/db';
 import { updateTool, deleteTool } from '../../actions';
-import { ArrowLeft, Trash2 } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
+import { DeletePageButton } from '../../_components/DeleteWithConfirm';
 
 export default async function EditToolPage({
   params,
@@ -160,20 +161,11 @@ export default async function EditToolPage({
 
         {/* 删除按钮 */}
         <div className="mt-8 pt-6 border-t border-slate-200">
-          <form action={deleteTool.bind(null, id)}>
-            <button
-              type="submit"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition"
-              onClick={(e) => {
-                if (!confirm('确定要删除这个工具吗？')) {
-                  e.preventDefault();
-                }
-              }}
-            >
-              <Trash2 className="w-4 h-4" />
-              删除工具
-            </button>
-          </form>
+          <DeletePageButton
+            formAction={deleteTool.bind(null, id)}
+            message="确定要删除这个工具吗？"
+            label="删除工具"
+          />
         </div>
       </div>
     </div>
