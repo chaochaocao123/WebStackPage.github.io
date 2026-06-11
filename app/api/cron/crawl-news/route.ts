@@ -1,9 +1,10 @@
 // Vercel Cron: 抓取行业资讯
 // 触发：每天北京时间 9:00 和 18:00（UTC 1:00 和 10:00）
 // 安全：用 Vercel 的 CRON_SECRET 验证请求
-// 数据源：amz123（跨境头条）、cifnews（雨果网）、mjzj（卖家之家）
+// 数据源：wearesellers（跨境卖家社区问答）
 // 用 RSS 抓取，每个源只取最近 20 条
 // 用 URL 去重，已存在的不会更新（保留人工编辑）
+// 2026-06-11: 替换 amz123/cifnews/mjzj（RSS 全部 404）→ wearesellers
 
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
@@ -26,11 +27,9 @@ interface Feed {
   url: string;
 }
 
-// 资讯源（RSS 优先，失败回退 HTML）
+// 资讯源（wearesellers 跨境卖家社区，活跃 RSS）
 const FEEDS: Feed[] = [
-  { source: 'amz123', url: 'https://www.amz123.com/feed' },
-  { source: 'cifnews', url: 'https://www.cifnews.com/feed' },
-  { source: 'mjzj', url: 'https://www.mjzj.com/feed' },
+  { source: 'wearesellers', url: 'https://www.wearesellers.com/feed' },
 ];
 
 // HTML 回退抓取（如果 RSS 失败）

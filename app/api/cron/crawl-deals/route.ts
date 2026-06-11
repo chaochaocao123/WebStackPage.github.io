@@ -1,8 +1,9 @@
 // Vercel Cron: 抓取优惠活动
 // 触发：每天北京时间 12:00（UTC 4:00）
 // 安全：用 Vercel 的 CRON_SECRET 验证请求
-// 数据源：amz123 RSS（关键词过滤：优惠/折扣/code/coupon/折）
+// 数据源：wearesellers RSS（关键词过滤：优惠/折扣/code/coupon/折）
 // URL 去重，已存在的不会更新
+// 2026-06-11: amz123 RSS 失效 → wearesellers
 
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
@@ -28,8 +29,8 @@ interface DealSource {
 
 const SOURCES: DealSource[] = [
   {
-    source: 'amz123',
-    rss: 'https://www.amz123.com/feed',
+    source: 'wearesellers',
+    rss: 'https://www.wearesellers.com/feed',
   },
 ];
 
