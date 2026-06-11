@@ -56,7 +56,7 @@ export async function middleware(request: NextRequest) {
   if (pathname.startsWith('/admin')) {
     const sessionToken = request.cookies.get('admin_session')?.value;
 
-    if (!(await verifySession(sessionToken))) {
+    if (!(await verifySession(sessionToken || ''))) {
       return NextResponse.redirect(new URL('/admin/login', request.url));
     }
   }

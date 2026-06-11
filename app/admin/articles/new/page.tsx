@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { createArticle } from '../actions';
+import { createArticle } from '../../actions';
 import { ArrowLeft } from 'lucide-react';
 
 export default async function NewArticlePage() {

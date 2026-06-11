@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { createDeal } from '../actions';
+import { createDeal } from '../../actions';
 import { ArrowLeft } from 'lucide-react';
 
 export default async function NewDealPage() {

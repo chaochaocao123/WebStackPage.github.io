@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/db';
-import { updateArticle, deleteArticle } from '../actions';
+import { updateArticle, deleteArticle } from '../../actions';
 import { ArrowLeft, Trash2 } from 'lucide-react';
 
 export default async function EditArticlePage({

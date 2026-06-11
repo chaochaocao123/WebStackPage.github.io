@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/db';
-import { updateAdSpot } from '../actions';
+import { updateAdSpot } from '../../actions';
 import { ArrowLeft } from 'lucide-react';
 
 export default async function EditAdSpotPage({

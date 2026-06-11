@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/db';
-import { updateTool, deleteTool } from '../actions';
+import { updateTool, deleteTool } from '../../actions';
 import { ArrowLeft, Trash2 } from 'lucide-react';
 
 export default async function EditToolPage({

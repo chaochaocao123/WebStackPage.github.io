@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/db';
-import { createTool } from '../actions';
+import { createTool } from '../../actions';
 import { ArrowLeft } from 'lucide-react';
 
 export default async function NewToolPage() {

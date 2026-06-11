@@ -1,6 +1,6 @@
 // 从数据库读取工具和分类数据
 // 导出与 lib/data/tools.ts 相同的接口，保持 app/page.tsx 兼容
-import { prisma } from './db';
+import { prisma } from '../db';
 
 export interface Tool {
   name: string;
