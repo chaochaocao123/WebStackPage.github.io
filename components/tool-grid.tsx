@@ -1,6 +1,7 @@
 'use client';
-import { useState, useMemo } from 'react';
-import { Search, Tag, ExternalLink, Gift, Sparkles } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Search, ExternalLink, Gift, Sparkles } from 'lucide-react';
 import { TOOLS, CATEGORIES, Tool } from '@/lib/data/tools';
 
 interface ToolCardProps {
@@ -86,9 +87,20 @@ function ToolCard({ tool, showCategory = false }: ToolCardProps) {
   );
 }
 
-export function ToolGrid() {
+// 包装组件，支持 URL query 参数搜索
+function ToolGridInner() {
+  const searchParams = useSearchParams();
+  const urlQuery = searchParams.get('q') || '';
+  
   const [activeCat, setActiveCat] = useState('all');
   const [search, setSearch] = useState('');
+
+  // 同步 URL query 参数
+  useEffect(() => {
+    if (urlQuery) {
+      setSearch(urlQuery);
+    }
+  }, [urlQuery]);
 
   const filteredTools = useMemo(() => {
     let result = TOOLS;
@@ -153,7 +165,11 @@ export function ToolGrid() {
       {/* 工具数量 */}
       <div className="flex items-center justify-between mb-4">
         <div className="text-sm text-slate-500">
-          共 <span className="font-semibold text-slate-900">{filteredTools.length}</span> 个工具
+          {search ? (
+            <>找到 <span className="font-semibold text-slate-900">{filteredTools.length}</span> 个匹配的工具</>
+          ) : (
+            <>共 <span className="font-semibold text-slate-900">{filteredTools.length}</span> 个工具</>
+          )}
         </div>
         <div className="text-xs text-slate-400 flex items-center gap-1">
           <Sparkles className="w-3 h-3" />
@@ -172,8 +188,34 @@ export function ToolGrid() {
         <div className="text-center py-16 text-slate-400">
           <Search className="w-12 h-12 mx-auto mb-3 opacity-50" />
           <p>没有找到匹配的工具</p>
+          <p className="text-sm mt-1">试试其他关键词</p>
         </div>
       )}
     </div>
+  );
+}
+
+// 导出包装组件，处理 Suspense
+import { Suspense } from 'react';
+
+export function ToolGrid() {
+  return (
+    <Suspense fallback={
+      <div className="animate-pulse">
+        <div className="h-12 bg-slate-200 rounded-xl mb-4"></div>
+        <div className="flex gap-2 mb-6">
+          {[1,2,3,4,5].map(i => (
+            <div key={i} className="h-9 w-20 bg-slate-200 rounded-lg"></div>
+          ))}
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+          {[1,2,3,4,5,6,7,8].map(i => (
+            <div key={i} className="h-28 bg-slate-200 rounded-xl"></div>
+          ))}
+        </div>
+      </div>
+    }>
+      <ToolGridInner />
+    </Suspense>
   );
 }

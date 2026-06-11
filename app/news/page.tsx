@@ -18,12 +18,9 @@ export default function NewsPage() {
             <Newspaper className="w-6 h-6 text-accent-500" />
             <h1 className="text-2xl font-bold text-slate-900">行业资讯</h1>
           </div>
-          <div className="text-xs text-slate-500 flex items-center gap-1">
-            <RefreshCw className="w-3 h-3" />
-            每日 9:00 / 18:00 自动更新
-          </div>
         </div>
-        <p className="text-slate-500 mb-8">每日自动抓取 amz123、mjzj、wearesellers、cifnews 等行业媒体的热门资讯</p>
+        {/* 优化7：修改文案 */}
+        <p className="text-slate-500 mb-8">每日从权威资讯网站获取最新最热门信息，帮助大家了解前沿动态~</p>
 
         {NEWS.length === 0 ? (
           <div className="text-center py-20 bg-white border border-dashed border-slate-200 rounded-2xl">

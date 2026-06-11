@@ -1,5 +1,9 @@
+'use client';
+
 import Link from 'next/link';
-import { Search, Tag, Newspaper, Wrench, Gift, FileText, Menu } from 'lucide-react';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Search, Menu, X } from 'lucide-react';
 
 const NAV = [
   { href: '/', label: '首页' },
@@ -9,52 +13,169 @@ const NAV = [
   { href: '/tools', label: '实用工具' },
 ];
 
+// 二维码数据
+const QR_CODES = [
+  { name: '小红书', src: '/images/qrcode/xiaohongshu.jpeg', alt: '小红书二维码' },
+  { name: '知乎', src: '/images/qrcode/zhihu.jpeg', alt: '知乎二维码' },
+  { name: '视频号', src: '/images/qrcode/shipinhao.jpeg', alt: '视频号二维码' },
+  { name: '公众号', src: '/images/qrcode/gongzhonghao.jpeg', alt: '公众号二维码' },
+  { name: '抖音', src: '/images/qrcode/douyin.png', alt: '抖音二维码' },
+];
+
 export function Header() {
+  const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/tools?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
+
   return (
-    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white font-bold text-lg shadow-md">
-              跨
-            </div>
-            <div>
-              <div className="font-bold text-slate-900 leading-tight">跨境工具说</div>
-              <div className="text-[10px] text-slate-500 leading-tight">kjgjs.cn</div>
-            </div>
-          </Link>
+    <>
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo - 优化1：使用图片 */}
+            <Link href="/" className="flex items-center gap-2 group">
+              <img 
+                src="/images/logo/logo.png" 
+                alt="跨境工具说"
+                className="h-9 w-auto object-contain"
+                onError={(e) => {
+                  // fallback to text logo
+                  (e.target as HTMLImageElement).style.display = 'none';
+                }}
+              />
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white font-bold text-lg shadow-md">
+                  跨
+                </div>
+                <div>
+                  <div className="font-bold text-slate-900 leading-tight">跨境工具说</div>
+                  <div className="text-[10px] text-slate-500 leading-tight">kjgjs.cn</div>
+                </div>
+              </div>
+            </Link>
 
-          {/* 主导航 */}
-          <nav className="hidden md:flex items-center gap-1">
-            {NAV.map(item => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:text-brand-600 hover:bg-brand-50 transition-colors"
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
+            {/* 主导航 */}
+            <nav className="hidden md:flex items-center gap-1">
+              {NAV.map(item => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:text-brand-600 hover:bg-brand-50 transition-colors"
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
 
-          {/* 搜索框 */}
-          <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-lg w-64">
-            <Search className="w-4 h-4 text-slate-400" />
-            <input
-              type="text"
-              placeholder="搜索工具、文章..."
-              className="bg-transparent flex-1 text-sm outline-none placeholder:text-slate-400"
-            />
+            {/* 搜索框 - 优化2：实现搜索功能 */}
+            <form 
+              onSubmit={handleSearch}
+              className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-lg w-64"
+            >
+              <Search className="w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="搜索工具、文章..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="bg-transparent flex-1 text-sm outline-none placeholder:text-slate-400"
+              />
+            </form>
+
+            {/* 移动端菜单按钮 - 优化4：绑定点击事件 */}
+            <button 
+              className="md:hidden p-2 text-slate-600"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="菜单"
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
           </div>
 
-          {/* 移动端菜单 */}
-          <button className="md:hidden p-2 text-slate-600">
-            <Menu className="w-5 h-5" />
-          </button>
+          {/* 移动端搜索框 - 优化4：移动端搜索入口 */}
+          <div className="md:hidden pb-3">
+            <form onSubmit={handleSearch}>
+              <div className="flex items-center gap-2 px-3 py-2 bg-slate-100 rounded-lg">
+                <Search className="w-4 h-4 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="搜索工具、文章..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400"
+                />
+              </div>
+            </form>
+          </div>
         </div>
-      </div>
-    </header>
+
+        {/* 移动端导航抽屉 - 优化4：导航菜单 */}
+        {mobileMenuOpen && (
+          <div className="md:hidden bg-white border-t border-slate-200 animate-in slide-in-from-top-2 duration-200">
+            <nav className="max-w-7xl mx-auto px-4 py-3 space-y-1">
+              {NAV.map(item => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="block px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:text-brand-600 hover:bg-brand-50 transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+          </div>
+        )}
+      </header>
+    </>
+  );
+}
+
+// 优化3：右下角悬浮二维码按钮组
+export function QrCodeFloat() {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div className="fixed right-4 bottom-4 z-40">
+      {/* 二维码展示面板 */}
+      {isOpen && (
+        <div className="absolute bottom-14 right-0 bg-white rounded-xl shadow-2xl p-4 border border-slate-200 w-64 animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <div className="text-sm font-semibold text-slate-900 mb-3 text-center">扫码关注我们</div>
+          <div className="grid grid-cols-2 gap-3">
+            {QR_CODES.map((qr) => (
+              <div key={qr.name} className="text-center">
+                <img 
+                  src={qr.src} 
+                  alt={qr.alt}
+                  className="w-24 h-24 mx-auto rounded-lg object-cover border border-slate-100"
+                />
+                <div className="text-xs text-slate-600 mt-1">{qr.name}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      
+      {/* 悬浮按钮 */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-12 h-12 bg-gradient-to-br from-brand-500 to-brand-700 rounded-full shadow-lg flex items-center justify-center text-white hover:shadow-xl transition-shadow"
+        aria-label="关注我们"
+      >
+        {isOpen ? <X className="w-5 h-5" /> : (
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
+          </svg>
+        )}
+      </button>
+    </div>
   );
 }
 
@@ -62,7 +183,7 @@ export function Footer() {
   return (
     <footer className="bg-slate-900 text-slate-400 mt-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
           <div>
             <div className="flex items-center gap-2 mb-4">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white font-bold">跨</div>
@@ -95,7 +216,16 @@ export function Footer() {
               <li>公众号：跨境工具说</li>
               <li>小红书：跨境工具说</li>
               <li>知乎：跨境工具说</li>
-              <li>雨果网：跨境工具说</li>
+              <li>抖音：跨境工具说</li>
+            </ul>
+          </div>
+          {/* 优化8：商务联系方式 */}
+          <div>
+            <h4 className="font-medium text-white mb-3 text-sm">商务合作</h4>
+            <ul className="space-y-2 text-sm">
+              <li className="text-brand-400">18971469839</li>
+              <li><Link href="/deals" className="hover:text-white">加入优惠活动</Link></li>
+              <li><Link href="/tools" className="hover:text-white">工具合作</Link></li>
             </ul>
           </div>
         </div>

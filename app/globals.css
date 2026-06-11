@@ -37,3 +37,12 @@ body {
 .discount-badge {
   animation: pulse-discount 2s infinite;
 }
+
+/* 资讯滚动动画 - 优化9 */
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.animate-marquee {
+  animation: marquee 30s linear infinite;
+}

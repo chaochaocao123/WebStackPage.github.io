@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Header, Footer } from '@/components/layout';
+import { Header, Footer, QrCodeFloat } from '@/components/layout';
 import { ToolGrid } from '@/components/tool-grid';
 import { ToolCard } from '@/components/tool-card';
 import { getTools, getCategories } from '@/lib/data/tools-db';
@@ -103,6 +103,9 @@ export default async function HomePage() {
           </div>
         </section>
 
+        {/* 优化9：自动滚动资讯区域 */}
+        <MarqueeNews />
+
         {/* 限时优惠工具 */}
         {featuredTools.length > 0 && (
           <section className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
@@ -182,13 +185,13 @@ export default async function HomePage() {
               </div>
               <h3 className="text-2xl md:text-3xl font-bold mb-3">关注「跨境工具说」</h3>
               <p className="text-brand-100 leading-relaxed mb-6">
-                公众号、小红书、知乎、雨果网同步更新。每天获取跨境工具评测、平台政策解读、运营实战技巧。
+                公众号、小红书、知乎、抖音同步更新。每天获取跨境工具评测、平台政策解读、运营实战技巧。
               </p>
               <div className="flex flex-wrap gap-3 text-xs">
                 <div className="px-3 py-1.5 bg-white/10 rounded-lg">公众号 · 跨境工具说</div>
                 <div className="px-3 py-1.5 bg-white/10 rounded-lg">小红书 · 跨境工具说</div>
                 <div className="px-3 py-1.5 bg-white/10 rounded-lg">知乎 · 跨境工具说</div>
-                <div className="px-3 py-1.5 bg-white/10 rounded-lg">雨果网 · 跨境工具说</div>
+                <div className="px-3 py-1.5 bg-white/10 rounded-lg">抖音 · 跨境工具说</div>
               </div>
             </div>
           </div>
@@ -196,6 +199,65 @@ export default async function HomePage() {
       </main>
 
       <Footer />
+      {/* 优化3：右下角悬浮二维码按钮 */}
+      <QrCodeFloat />
     </div>
+  );
+}
+
+// 优化9：自动滚动资讯组件 (Mock数据)
+function MarqueeNews() {
+  // TODO: 等资讯抓取功能上线后替换为真实数据
+  const mockNews = [
+    { id: 1, title: '亚马逊将于2026年7月27日起实施产品标题新规', time: '28分钟前' },
+    { id: 2, title: '我国质量认证国际互认取得显著进展', time: '27分钟前' },
+    { id: 3, title: '谷歌Gemini推出小企业新功能，可连接Google服务', time: '17分钟前' },
+    { id: 4, title: 'Temu半托管模式再升级，物流时效要求调整', time: '2小时前' },
+    { id: 5, title: '亚马逊FBA费用变更通知，多类目仓储费上涨', time: '3小时前' },
+    { id: 6, title: 'TikTok Shop美国市场Q2GMV同比增长156%', time: '5小时前' },
+    { id: 7, title: '2026年跨境电商行业趋势报告发布', time: '昨天' },
+    { id: 8, title: 'Shopee更新卖家保护政策，退货率阈值调整', time: '昨天' },
+  ];
+
+  return (
+    <section className="bg-gradient-to-r from-brand-600 to-brand-700 py-3 overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="flex items-center gap-4">
+          {/* 标签 */}
+          <div className="flex-shrink-0 flex items-center gap-2 px-3 py-1 bg-white/20 rounded-full">
+            <TrendingUp className="w-3.5 h-3.5 text-white" />
+            <span className="text-xs font-medium text-white">跨境快讯</span>
+          </div>
+          
+          {/* 滚动区域 */}
+          <div className="relative flex-1 overflow-hidden">
+            <div className="animate-marquee whitespace-nowrap">
+              {[...mockNews, ...mockNews].map((item, idx) => (
+                <span key={`${item.id}-${idx}`} className="inline-flex items-center">
+                  <a 
+                    href="/news" 
+                    className="text-sm text-white/90 hover:text-white transition-colors"
+                  >
+                    {item.title}
+                  </a>
+                  <span className="mx-4 text-white/40">|</span>
+                </span>
+              ))}
+            </div>
+          </div>
+          
+          {/* 更多按钮 */}
+          <Link 
+            href="/news" 
+            className="flex-shrink-0 text-xs text-white/80 hover:text-white transition-colors flex items-center gap-1"
+          >
+            更多
+            <ChevronRight className="w-3 h-3" />
+          </Link>
+        </div>
+      </div>
+      
+
+    </section>
   );
 }

@@ -86,3 +86,19 @@ model AdSpot {
   active   Boolean @default(true)
   sort     Int     @default(0)
 }
+
+// 优化6：页面访问埋点记录
+model PageView {
+  id         Int       @id @default(autoincrement())
+  sessionId  String    // 会话 ID（用于计算 UV）
+  path       String    // 页面路径
+  referrer   String?   // 来源页面
+  userAgent  String?   // 浏览器 UA
+  enteredAt  DateTime  @default(now())  // 进入时间
+  leftAt     DateTime? // 离开时间
+  duration   Int?      // 停留时长（秒）
+  
+  @@index([sessionId])
+  @@index([path])
+  @@index([enteredAt])
+}
