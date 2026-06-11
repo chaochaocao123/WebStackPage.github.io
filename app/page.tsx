@@ -1,4 +1,3 @@
-import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Header, Footer } from '@/components/layout';
 import { ToolGrid } from '@/components/tool-grid';
@@ -7,6 +6,9 @@ import { getTools, getCategories } from '@/lib/data/tools-db';
 import { TrendingUp, FileText, Newspaper, Gift, Wrench, BookOpen, ChevronRight, Sparkles, Zap, MessageCircle } from 'lucide-react';
 
 // 首页 - 工具导航为主
+// 关键：动态渲染，保证后台改数据后用户访问立即看到
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 export default async function HomePage() {
   // 从数据库获取数据
   const tools = await getTools();
