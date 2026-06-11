@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Analytics } from '@/components/Analytics';
+import { QrCodeFloat } from '@/components/layout';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -122,6 +123,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen antialiased">
         <Analytics />
         {children}
+        <QrCodeFloat />
       </body>
     </html>
   );

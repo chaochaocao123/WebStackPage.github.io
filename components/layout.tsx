@@ -30,7 +30,7 @@ export function Header() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      router.push(`/tools?q=${encodeURIComponent(searchQuery.trim())}`);
+      router.push(`/?q=${encodeURIComponent(searchQuery.trim())}#tools`);
     }
   };
 
@@ -39,25 +39,14 @@ export function Header() {
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16">
-            {/* Logo - 优化1：使用图片 */}
+            {/* Logo */}
             <Link href="/" className="flex items-center gap-2 group">
-              <img 
-                src="/images/logo/logo.png" 
-                alt="跨境工具说"
-                className="h-9 w-auto object-contain"
-                onError={(e) => {
-                  // fallback to text logo
-                  (e.target as HTMLImageElement).style.display = 'none';
-                }}
-              />
-              <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white font-bold text-lg shadow-md">
-                  跨
-                </div>
-                <div>
-                  <div className="font-bold text-slate-900 leading-tight">跨境工具说</div>
-                  <div className="text-[10px] text-slate-500 leading-tight">kjgjs.cn</div>
-                </div>
+              <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white font-bold text-lg shadow-md">
+                跨
+              </div>
+              <div>
+                <div className="font-bold text-slate-900 leading-tight">跨境工具说</div>
+                <div className="text-[10px] text-slate-500 leading-tight">kjgjs.cn</div>
               </div>
             </Link>
 
