@@ -76,6 +76,27 @@ model Deal {
   updatedAt   DateTime @updatedAt
 }
 
+// 资讯（自动抓取 + 手动发布）
+model News {
+  id          Int      @id @default(autoincrement())
+  title       String
+  url         String   @unique
+  source      String   // amz123 / mjzj / wearesellers / cifnews / manual
+  sourceLogo  String?
+  summary     String?
+  cover       String?
+  category    String?
+  publishedAt DateTime
+  crawledAt   DateTime @default(now())
+  sourceType  String   @default("crawl")  // crawl / manual
+  pinned      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([source])
+  @@index([publishedAt])
+}
+
 // 广告位
 model AdSpot {
   id       Int     @id @default(autoincrement())

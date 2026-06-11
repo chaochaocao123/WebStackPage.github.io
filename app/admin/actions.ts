@@ -307,3 +307,103 @@ export async function updateAdSpot(id: number, formData: FormData) {
 
   revalidatePath('/admin/ads');
 }
+
+// ============ 资讯管理 ============
+
+export async function createNews(formData: FormData) {
+  const title = (formData.get('title') as string || '').trim();
+  const url = (formData.get('url') as string || '').trim();
+  const source = (formData.get('source') as string || 'manual').trim();
+  const category = (formData.get('category') as string || '').trim() || null;
+  const summary = (formData.get('summary') as string || '').trim() || null;
+  const cover = (formData.get('cover') as string || '').trim() || null;
+  const publishedAtRaw = formData.get('publishedAt') as string;
+  const pinned = formData.get('pinned') === 'on';
+
+  if (!title || !url) {
+    throw new Error('标题和链接必填');
+  }
+
+  // publishedAt 可能是 datetime-local 空字符串，fallback 到 now
+  const publishedAt = publishedAtRaw ? new Date(publishedAtRaw) : new Date();
+
+  // 用 url 做唯一键去重
+  await prisma.news.upsert({
+    where: { url },
+    create: {
+      title,
+      url,
+      source,
+      sourceType: 'manual',
+      category,
+      summary,
+      cover,
+      publishedAt,
+      pinned,
+    },
+    update: {
+      title,
+      source,
+      category,
+      summary,
+      cover,
+      publishedAt,
+      pinned,
+    },
+  });
+
+  revalidatePath('/admin/news');
+  revalidatePath('/news');
+}
+
+export async function updateNews(id: number, formData: FormData) {
+  const title = (formData.get('title') as string || '').trim();
+  const url = (formData.get('url') as string || '').trim();
+  const source = (formData.get('source') as string || 'manual').trim();
+  const category = (formData.get('category') as string || '').trim() || null;
+  const summary = (formData.get('summary') as string || '').trim() || null;
+  const cover = (formData.get('cover') as string || '').trim() || null;
+  const publishedAtRaw = formData.get('publishedAt') as string;
+  const pinned = formData.get('pinned') === 'on';
+
+  if (!title || !url) {
+    throw new Error('标题和链接必填');
+  }
+
+  const publishedAt = publishedAtRaw ? new Date(publishedAtRaw) : new Date();
+
+  await prisma.news.update({
+    where: { id },
+    data: {
+      title,
+      url,
+      source,
+      category,
+      summary,
+      cover,
+      publishedAt,
+      pinned,
+    },
+  });
+
+  revalidatePath('/admin/news');
+  revalidatePath('/admin/news/' + id);
+  revalidatePath('/news');
+}
+
+export async function deleteNews(id: number) {
+  await prisma.news.delete({ where: { id } });
+  revalidatePath('/admin/news');
+  revalidatePath('/news');
+}
+
+export async function togglePinNews(id: number) {
+  const current = await prisma.news.findUnique({ where: { id }, select: { pinned: true } });
+  if (!current) return;
+  await prisma.news.update({
+    where: { id },
+    data: { pinned: !current.pinned },
+  });
+  revalidatePath('/admin/news');
+  revalidatePath('/news');
+}

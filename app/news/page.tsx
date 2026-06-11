@@ -1,14 +1,27 @@
 import Link from 'next/link';
 import { Header, Footer } from '@/components/layout';
 import { Newspaper, ExternalLink, Clock, TrendingUp, RefreshCw } from 'lucide-react';
-import { NEWS } from '@/lib/data/news';
+import { getNewsFromDB } from '@/lib/data/news';
 
 export const metadata = {
   title: '行业资讯 - 跨境工具说',
   description: '每日更新跨境电商行业热门资讯，覆盖亚马逊、TikTok、Temu、Shopee 等平台',
 };
 
-export default function NewsPage() {
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+const SOURCE_LABEL: Record<string, string> = {
+  amz123: 'AMZ123',
+  mjzj: '卖家之家',
+  wearesellers: 'WeAreSellers',
+  cifnews: '雨果网',
+  manual: '跨境工具说',
+};
+
+export default async function NewsPage() {
+  const NEWS = await getNewsFromDB(80);
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />

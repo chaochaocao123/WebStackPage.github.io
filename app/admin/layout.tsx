@@ -10,12 +10,14 @@ import {
   ExternalLink,
   LogOut,
   Sparkles,
+  Newspaper,
 } from 'lucide-react';
 
 const navItems = [
   { href: '/admin', label: '概览', icon: LayoutDashboard },
   { href: '/admin/tools', label: '工具管理', icon: Wrench },
   { href: '/admin/categories', label: '分类管理', icon: FolderOpen },
+  { href: '/admin/news', label: '资讯管理', icon: Newspaper },
   { href: '/admin/articles', label: '文章管理', icon: FileText },
   { href: '/admin/deals', label: '优惠管理', icon: Gift },
   { href: '/admin/ads', label: '广告位', icon: Image },
