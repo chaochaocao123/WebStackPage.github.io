@@ -1,5 +1,6 @@
 'use client';
 
+// v1.0 - 抽取通用删除按钮 client component（修复 onClick 在 server component 报错）
 import { Trash2 } from 'lucide-react';
 
 type ServerAction = (formData: FormData) => void | Promise<void>;
