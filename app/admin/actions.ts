@@ -82,6 +82,7 @@ export async function createTool(formData: FormData) {
 
   revalidatePath('/admin/tools');
   revalidatePath('/');
+  redirect('/admin/tools');
 }
 
 export async function updateTool(id: number, formData: FormData) {
@@ -110,6 +111,7 @@ export async function updateTool(id: number, formData: FormData) {
 
   revalidatePath('/admin/tools');
   revalidatePath('/');
+  redirect('/admin/tools');
 }
 
 export async function deleteTool(id: number) {
@@ -137,6 +139,7 @@ export async function createCategory(formData: FormData) {
   });
 
   revalidatePath('/admin/categories');
+  redirect('/admin/categories');
 }
 
 export async function updateCategory(id: number, formData: FormData) {
@@ -150,6 +153,7 @@ export async function updateCategory(id: number, formData: FormData) {
   });
 
   revalidatePath('/admin/categories');
+  redirect('/admin/categories');
 }
 
 export async function deleteCategory(id: number) {
@@ -186,6 +190,7 @@ export async function createArticle(formData: FormData) {
 
   revalidatePath('/admin/articles');
   revalidatePath('/articles');
+  redirect('/admin/articles');
 }
 
 export async function updateArticle(id: number, formData: FormData) {
@@ -216,6 +221,7 @@ export async function updateArticle(id: number, formData: FormData) {
 
   revalidatePath('/admin/articles');
   revalidatePath('/articles');
+  redirect('/admin/articles');
 }
 
 export async function deleteArticle(id: number) {
@@ -253,6 +259,7 @@ export async function createDeal(formData: FormData) {
 
   revalidatePath('/admin/deals');
   revalidatePath('/deals');
+  redirect('/admin/deals');
 }
 
 export async function updateDeal(id: number, formData: FormData) {
@@ -283,6 +290,7 @@ export async function updateDeal(id: number, formData: FormData) {
 
   revalidatePath('/admin/deals');
   revalidatePath('/deals');
+  redirect('/admin/deals');
 }
 
 export async function deleteDeal(id: number) {
@@ -306,6 +314,7 @@ export async function updateAdSpot(id: number, formData: FormData) {
   });
 
   revalidatePath('/admin/ads');
+  redirect('/admin/ads');
 }
 
 // ============ 资讯管理 ============
@@ -354,6 +363,7 @@ export async function createNews(formData: FormData) {
 
   revalidatePath('/admin/news');
   revalidatePath('/news');
+  redirect('/admin/news');
 }
 
 export async function updateNews(id: number, formData: FormData) {
@@ -389,6 +399,7 @@ export async function updateNews(id: number, formData: FormData) {
   revalidatePath('/admin/news');
   revalidatePath('/admin/news/' + id);
   revalidatePath('/news');
+  redirect('/admin/news');
 }
 
 export async function deleteNews(id: number) {
