@@ -1,9 +1,7 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/db';
 import { updateNews, deleteNews } from '../../actions';
-import { ArrowLeft } from 'lucide-react';
-import { DeletePageButton } from '../../_components/DeleteWithConfirm';
+import { NewsFormClient } from '../_components/NewsFormClient';
 
 const SOURCE_LABEL: Record<string, string> = {
   manual: '跨境工具说',
@@ -28,183 +26,70 @@ export default async function EditNewsPage({
   const d = new Date(item.publishedAt);
   const publishedAtLocal = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 
-  return (
-    <div>
-      <div className="flex items-center gap-4 mb-6">
-        <Link href="/admin/news" className="p-2 text-slate-400 hover:text-slate-600">
-          <ArrowLeft className="w-5 h-5" />
-        </Link>
-        <h1 className="text-2xl font-bold text-slate-900">编辑资讯</h1>
-        <span className="px-2 py-0.5 rounded text-xs bg-slate-100 text-slate-600">
-          来源：{SOURCE_LABEL[item.source] || item.source}
+  const initialData = {
+    id: item.id,
+    title: item.title,
+    url: item.url,
+    source: item.source,
+    category: item.category || '',
+    summary: item.summary || '',
+    cover: item.cover || '',
+    publishedAt: publishedAtLocal,
+    pinned: item.pinned,
+  };
+
+  // 编辑页头部额外标签（来源 + 抓取时间）
+  const headerExtra = (
+    <>
+      <span className="px-2 py-0.5 rounded text-xs bg-slate-100 text-slate-600">
+        来源：{SOURCE_LABEL[item.source] || item.source}
+      </span>
+      {item.sourceType === 'crawl' && (
+        <span className="px-2 py-0.5 rounded text-xs bg-blue-50 text-blue-600">
+          抓取于 {new Date(item.crawledAt).toLocaleString('zh-CN')}
         </span>
-        {item.sourceType === 'crawl' && (
-          <span className="px-2 py-0.5 rounded text-xs bg-blue-50 text-blue-600">
-            抓取于 {new Date(item.crawledAt).toLocaleString('zh-CN')}
-          </span>
-        )}
-      </div>
+      )}
+    </>
+  );
 
-      <div className="bg-white rounded-xl border border-slate-200 p-6">
-        <form action={updateNews.bind(null, id)} className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              标题 <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              name="title"
-              required
-              defaultValue={item.title}
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+  // 编辑页前置内容（抓取的正文只读展示）
+  const preFormContent = (
+    <div className="mb-6 bg-white rounded-xl border border-slate-200 p-6">
+      <h2 className="text-sm font-semibold text-slate-700 mb-3">
+        正文内容
+        <span className="ml-2 text-xs text-slate-400 font-normal">
+          {item.content
+            ? `已抓取（${(item.content.length / 1024).toFixed(1)} KB，自动抓取）`
+            : '尚未抓取（下次 cron 自动抓取）'}
+        </span>
+      </h2>
+      {item.content ? (
+        <details className="border border-slate-200 rounded-lg overflow-hidden">
+          <summary className="px-4 py-2.5 bg-slate-50 cursor-pointer text-sm text-slate-600 hover:bg-slate-100">
+            点击展开 / 折叠抓取的 HTML 正文
+          </summary>
+          <div className="p-4 max-h-96 overflow-auto bg-white">
+            <div
+              className="news-content prose prose-sm prose-slate max-w-none"
+              dangerouslySetInnerHTML={{ __html: item.content }}
             />
           </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              原文链接 <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="url"
-              name="url"
-              required
-              defaultValue={item.url}
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                来源
-              </label>
-              <select
-                name="source"
-                defaultValue={item.source}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
-              >
-                <option value="manual">跨境工具说（默认）</option>
-                <option value="mjzj">卖家之家</option>
-                <option value="cifnews">雨果网</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                分类
-              </label>
-              <input
-                type="text"
-                name="category"
-                defaultValue={item.category || ''}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
-                placeholder="例如：亚马逊、平台政策"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              摘要
-            </label>
-            <textarea
-              name="summary"
-              rows={3}
-              defaultValue={item.summary || ''}
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none resize-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              封面图 URL
-            </label>
-            <input
-              type="url"
-              name="cover"
-              defaultValue={item.cover || ''}
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
-            />
-          </div>
-
-          {/* 正文（只读 — 自动抓取填充） */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              正文内容
-              <span className="ml-2 text-xs text-slate-400 font-normal">
-                {item.content ? `已抓取（${(item.content.length / 1024).toFixed(1)} KB，自动抓取）` : '尚未抓取（下次 cron 自动抓取）'}
-              </span>
-            </label>
-            {item.content ? (
-              <details className="border border-slate-200 rounded-lg overflow-hidden">
-                <summary className="px-4 py-2.5 bg-slate-50 cursor-pointer text-sm text-slate-600 hover:bg-slate-100">
-                  点击展开 / 折叠抓取的 HTML 正文
-                </summary>
-                <div className="p-4 max-h-96 overflow-auto bg-white">
-                  <div
-                    className="news-content prose prose-sm prose-slate max-w-none"
-                    dangerouslySetInnerHTML={{ __html: item.content }}
-                  />
-                </div>
-              </details>
-            ) : (
-              <div className="px-4 py-3 bg-slate-50 border border-dashed border-slate-200 rounded-lg text-sm text-slate-500">
-                暂无内容。正文由 Vercel Cron 自动从卖家之家抓取并内嵌到本详情页，无需外跳。
-              </div>
-            )}
-          </div>
-
-          <div className="grid grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                发布时间
-              </label>
-              <input
-                type="datetime-local"
-                name="publishedAt"
-                defaultValue={publishedAtLocal}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
-              />
-            </div>
-
-            <div className="flex items-end">
-              <label className="inline-flex items-center gap-2 px-4 py-2 bg-amber-50 rounded-lg cursor-pointer hover:bg-amber-100 transition">
-                <input
-                  type="checkbox"
-                  name="pinned"
-                  defaultChecked={item.pinned}
-                  className="w-4 h-4 text-amber-500 border-slate-300 rounded focus:ring-amber-500"
-                />
-                <span className="text-sm font-medium text-amber-700">置顶显示</span>
-              </label>
-            </div>
-          </div>
-
-          <div className="flex gap-4 pt-4 border-t border-slate-200">
-            <button
-              type="submit"
-              className="px-6 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition"
-            >
-              保存修改
-            </button>
-            <Link
-              href="/admin/news"
-              className="px-6 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition"
-            >
-              取消
-            </Link>
-          </div>
-        </form>
-
-        {/* 删除按钮 */}
-        <div className="mt-8 pt-6 border-t border-slate-200">
-          <DeletePageButton
-            formAction={deleteNews.bind(null, id)}
-            message={`确定要删除「${item.title}」吗？`}
-            label="删除资讯"
-          />
+        </details>
+      ) : (
+        <div className="px-4 py-3 bg-slate-50 border border-dashed border-slate-200 rounded-lg text-sm text-slate-500">
+          暂无内容。正文由 Vercel Cron 自动从卖家之家抓取并内嵌到本详情页，无需外跳。
         </div>
-      </div>
+      )}
     </div>
+  );
+
+  return (
+    <NewsFormClient
+      initialData={initialData}
+      formAction={updateNews.bind(null, id)}
+      deleteAction={deleteNews.bind(null, id)}
+      preFormContent={preFormContent}
+      headerExtra={headerExtra}
+    />
   );
 }
