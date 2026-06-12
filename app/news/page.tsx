@@ -12,9 +12,7 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 const SOURCE_LABEL: Record<string, string> = {
-  amz123: 'AMZ123',
   mjzj: '卖家之家',
-  wearesellers: 'WeAreSellers',
   cifnews: '雨果网',
   manual: '跨境工具说',
 };

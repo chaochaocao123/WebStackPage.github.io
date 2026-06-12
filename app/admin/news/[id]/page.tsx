@@ -7,9 +7,7 @@ import { DeletePageButton } from '../../_components/DeleteWithConfirm';
 
 const SOURCE_LABEL: Record<string, string> = {
   manual: '跨境工具说',
-  amz123: 'AMZ123',
   mjzj: '卖家之家',
-  wearesellers: 'WeAreSellers',
   cifnews: '雨果网',
 };
 
@@ -86,10 +84,8 @@ export default async function EditNewsPage({
                 className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
               >
                 <option value="manual">跨境工具说（默认）</option>
-                <option value="amz123">AMZ123</option>
                 <option value="mjzj">卖家之家</option>
                 <option value="cifnews">雨果网</option>
-                <option value="wearesellers">WeAreSellers</option>
               </select>
             </div>
 

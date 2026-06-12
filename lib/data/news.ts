@@ -1,7 +1,7 @@
 // 跨境工具说 - 资讯数据
-// 自动从 amz123、mjzj、wearesellers、cifnews 抓取
+// 自动从 mjzj、cifnews 抓取
 // 也支持 admin 手动发布
-// 最后更新：2026-06-11
+// 最后更新：2026-06-12
 
 import { prisma } from '@/lib/db';
 
@@ -9,7 +9,7 @@ export interface NewsItem {
   id: number;
   title: string;
   url: string;
-  source: 'amz123' | 'mjzj' | 'wearesellers' | 'cifnews' | string;
+  source: 'mjzj' | 'cifnews' | 'manual' | string;
   sourceLogo?: string | null;
   summary?: string | null;
   cover?: string | null;

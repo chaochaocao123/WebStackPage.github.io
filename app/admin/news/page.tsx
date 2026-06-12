@@ -7,9 +7,7 @@ import { Pagination, ADMIN_PAGE_SIZE } from '../_components/Pagination';
 
 const SOURCE_LABEL: Record<string, string> = {
   manual: '跨境工具说',
-  amz123: 'AMZ123',
   mjzj: '卖家之家',
-  wearesellers: 'WeAreSellers',
   cifnews: '雨果网',
 };
 
