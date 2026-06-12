@@ -124,3 +124,17 @@ model PageView {
   @@index([path])
   @@index([enteredAt])
 }
+// 站内搜索日志（关键词监控）
+model SearchLog {
+  id          Int      @id @default(autoincrement())
+  keyword     String   // 搜索词（去前 100 字符）
+  resultCount Int      // 结果数（0 = 无结果）
+  tab         String   @default("all")  // all/tools/news/articles/deals
+  sessionId   String?  // 关联 PageView 会话（无则匿名）
+  noResult    Boolean  @default(false) // 是否无结果（重点关注）
+  createdAt   DateTime @default(now())
+
+  @@index([keyword])
+  @@index([createdAt])
+  @@index([noResult])
+}
