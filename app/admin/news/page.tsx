@@ -1,8 +1,9 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/db';
-import { Plus, ExternalLink, Pin, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, ExternalLink, Pin } from 'lucide-react';
 import { deleteNews, togglePinNews } from '../actions';
 import { DeleteRowButton } from '../_components/DeleteWithConfirm';
+import { Pagination } from '../_components/Pagination';
 
 const SOURCE_LABEL: Record<string, string> = {
   manual: '跨境工具说',
@@ -41,12 +42,6 @@ export default async function NewsPage({
 
   const crawlCount = news.filter((n) => n.sourceType === 'crawl').length;
   const manualCount = news.filter((n) => n.sourceType === 'manual').length;
-
-  // 当前页前后 2 范围的页码列表
-  const pageNumbers: number[] = [];
-  for (let i = Math.max(1, safePage - 2); i <= Math.min(totalPages, safePage + 2); i++) {
-    pageNumbers.push(i);
-  }
 
   return (
     <div>
@@ -157,88 +152,14 @@ export default async function NewsPage({
         </table>
       </div>
 
-      {/* 分页 */}
-      {totalPages > 1 && (
-        <div className="mt-4 flex items-center justify-between flex-wrap gap-2">
-          <div className="text-sm text-slate-500">
-            第 {startIdx}-{endIdx} 条 / 共 {total} 条 · 第 {safePage} / {totalPages} 页
-          </div>
-          <div className="flex items-center gap-1">
-            {/* 上一页 */}
-            {safePage > 1 ? (
-              <Link
-                href={`/admin/news?page=${safePage - 1}`}
-                className="px-2.5 py-1.5 border border-slate-200 rounded text-sm hover:bg-slate-100 flex items-center gap-1"
-              >
-                <ChevronLeft className="w-4 h-4" />
-                <span>上一页</span>
-              </Link>
-            ) : (
-              <span className="px-2.5 py-1.5 border border-slate-200 rounded text-sm text-slate-300 flex items-center gap-1 cursor-not-allowed">
-                <ChevronLeft className="w-4 h-4" />
-                <span>上一页</span>
-              </span>
-            )}
-
-            {/* 首页 + 省略号 */}
-            {safePage > 3 && (
-              <>
-                <Link
-                  href="/admin/news?page=1"
-                  className="px-3 py-1.5 border border-slate-200 rounded text-sm hover:bg-slate-100"
-                >
-                  1
-                </Link>
-                {safePage > 4 && <span className="px-1 text-slate-400">…</span>}
-              </>
-            )}
-
-            {/* 当前页前后 2 页 */}
-            {pageNumbers.map((p) => (
-              <Link
-                key={p}
-                href={`/admin/news?page=${p}`}
-                className={`px-3 py-1.5 rounded text-sm ${
-                  p === safePage
-                    ? 'bg-brand-600 text-white border border-brand-600'
-                    : 'border border-slate-200 hover:bg-slate-100'
-                }`}
-              >
-                {p}
-              </Link>
-            ))}
-
-            {/* 末页 + 省略号 */}
-            {safePage < totalPages - 2 && (
-              <>
-                {safePage < totalPages - 3 && <span className="px-1 text-slate-400">…</span>}
-                <Link
-                  href={`/admin/news?page=${totalPages}`}
-                  className="px-3 py-1.5 border border-slate-200 rounded text-sm hover:bg-slate-100"
-                >
-                  {totalPages}
-                </Link>
-              </>
-            )}
-
-            {/* 下一页 */}
-            {safePage < totalPages ? (
-              <Link
-                href={`/admin/news?page=${safePage + 1}`}
-                className="px-2.5 py-1.5 border border-slate-200 rounded text-sm hover:bg-slate-100 flex items-center gap-1"
-              >
-                <span>下一页</span>
-                <ChevronRight className="w-4 h-4" />
-              </Link>
-            ) : (
-              <span className="px-2.5 py-1.5 border border-slate-200 rounded text-sm text-slate-300 flex items-center gap-1 cursor-not-allowed">
-                <span>下一页</span>
-                <ChevronRight className="w-4 h-4" />
-              </span>
-            )}
-          </div>
-        </div>
-      )}
+      <Pagination
+        currentPage={safePage}
+        totalPages={totalPages}
+        total={total}
+        startIdx={startIdx}
+        endIdx={endIdx}
+        basePath="/admin/news"
+      />
     </div>
   );
 }

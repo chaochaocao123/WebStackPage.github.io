@@ -1,16 +1,45 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/db';
-import { updateAdSpot } from '../actions';
 import { ExternalLink, CheckCircle, XCircle } from 'lucide-react';
+import { Pagination } from '../_components/Pagination';
 
-export default async function AdsPage() {
-  const adSpots = await prisma.adSpot.findMany({
-    orderBy: { sort: 'asc' },
-  });
+const PAGE_SIZE = 20;
+
+// 强制动态渲染，避免 Router Cache 导致翻页时统计过时
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+export default async function AdsPage({
+  searchParams,
+}: {
+  searchParams: { page?: string };
+}) {
+  const page = Math.max(1, Number(searchParams.page) || 1);
+
+  const [total, adSpots] = await Promise.all([
+    prisma.adSpot.count(),
+    prisma.adSpot.findMany({
+      orderBy: { sort: 'asc' },
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+    }),
+  ]);
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const startIdx = total === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
+  const endIdx = Math.min(safePage * PAGE_SIZE, total);
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-slate-900 mb-6">广告位管理</h1>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">广告位管理</h1>
+          <p className="text-sm text-slate-500 mt-1">
+            共 {total} 条 · 本页 {startIdx}-{endIdx}
+          </p>
+        </div>
+      </div>
 
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <table className="w-full">
@@ -75,6 +104,15 @@ export default async function AdsPage() {
           </tbody>
         </table>
       </div>
+
+      <Pagination
+        currentPage={safePage}
+        totalPages={totalPages}
+        total={total}
+        startIdx={startIdx}
+        endIdx={endIdx}
+        basePath="/admin/ads"
+      />
 
       {/* 提示 */}
       <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">

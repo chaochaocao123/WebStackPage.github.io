@@ -3,16 +3,44 @@ import { prisma } from '@/lib/db';
 import { Plus, ExternalLink } from 'lucide-react';
 import { deleteDeal } from '../actions';
 import { DeleteRowButton } from '../_components/DeleteWithConfirm';
+import { Pagination } from '../_components/Pagination';
 
-export default async function DealsPage() {
-  const deals = await prisma.deal.findMany({
-    orderBy: { createdAt: 'desc' },
-  });
+const PAGE_SIZE = 20;
+
+// 强制动态渲染，避免 Router Cache 导致翻页时统计过时
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+export default async function DealsPage({
+  searchParams,
+}: {
+  searchParams: { page?: string };
+}) {
+  const page = Math.max(1, Number(searchParams.page) || 1);
+
+  const [total, deals] = await Promise.all([
+    prisma.deal.count(),
+    prisma.deal.findMany({
+      orderBy: { createdAt: 'desc' },
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+    }),
+  ]);
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const startIdx = total === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
+  const endIdx = Math.min(safePage * PAGE_SIZE, total);
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-slate-900">优惠管理</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">优惠管理</h1>
+          <p className="text-sm text-slate-500 mt-1">
+            共 {total} 条 · 本页 {startIdx}-{endIdx}
+          </p>
+        </div>
         <Link
           href="/admin/deals/new"
           className="inline-flex items-center gap-2 bg-brand-600 text-white px-4 py-2 rounded-lg hover:bg-brand-700 transition"
@@ -95,6 +123,15 @@ export default async function DealsPage() {
           </tbody>
         </table>
       </div>
+
+      <Pagination
+        currentPage={safePage}
+        totalPages={totalPages}
+        total={total}
+        startIdx={startIdx}
+        endIdx={endIdx}
+        basePath="/admin/deals"
+      />
     </div>
   );
 }
