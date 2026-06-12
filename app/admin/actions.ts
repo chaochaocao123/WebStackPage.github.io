@@ -80,7 +80,7 @@ export async function createTool(formData: FormData) {
     },
   });
 
-  revalidatePath('/admin/tools');
+  revalidatePath('/admin/tools'); revalidatePath('/admin');
   revalidatePath('/');
   redirect('/admin/tools');
 }
@@ -109,14 +109,14 @@ export async function updateTool(id: number, formData: FormData) {
     },
   });
 
-  revalidatePath('/admin/tools');
+  revalidatePath('/admin/tools'); revalidatePath('/admin');
   revalidatePath('/');
   redirect('/admin/tools');
 }
 
 export async function deleteTool(id: number) {
   await prisma.tool.delete({ where: { id } });
-  revalidatePath('/admin/tools');
+  revalidatePath('/admin/tools'); revalidatePath('/admin');
   revalidatePath('/');
 }
 
@@ -127,7 +127,7 @@ export async function updateCategorySort(id: number, sort: number) {
     where: { id },
     data: { sort },
   });
-  revalidatePath('/admin/categories');
+  revalidatePath('/admin/categories'); revalidatePath('/admin');
 }
 
 export async function createCategory(formData: FormData) {
@@ -138,7 +138,7 @@ export async function createCategory(formData: FormData) {
     data: { key, label, sort: 0 },
   });
 
-  revalidatePath('/admin/categories');
+  revalidatePath('/admin/categories'); revalidatePath('/admin');
   redirect('/admin/categories');
 }
 
@@ -152,13 +152,13 @@ export async function updateCategory(id: number, formData: FormData) {
     data: { key, label, sort },
   });
 
-  revalidatePath('/admin/categories');
+  revalidatePath('/admin/categories'); revalidatePath('/admin');
   redirect('/admin/categories');
 }
 
 export async function deleteCategory(id: number) {
   await prisma.category.delete({ where: { id } });
-  revalidatePath('/admin/categories');
+  revalidatePath('/admin/categories'); revalidatePath('/admin');
 }
 
 // ============ 文章管理 ============
@@ -188,7 +188,7 @@ export async function createArticle(formData: FormData) {
     },
   });
 
-  revalidatePath('/admin/articles');
+  revalidatePath('/admin/articles'); revalidatePath('/admin');
   revalidatePath('/articles');
   redirect('/admin/articles');
 }
@@ -219,14 +219,14 @@ export async function updateArticle(id: number, formData: FormData) {
     },
   });
 
-  revalidatePath('/admin/articles');
+  revalidatePath('/admin/articles'); revalidatePath('/admin');
   revalidatePath('/articles');
   redirect('/admin/articles');
 }
 
 export async function deleteArticle(id: number) {
   await prisma.article.delete({ where: { id } });
-  revalidatePath('/admin/articles');
+  revalidatePath('/admin/articles'); revalidatePath('/admin');
   revalidatePath('/articles');
 }
 
@@ -257,7 +257,7 @@ export async function createDeal(formData: FormData) {
     },
   });
 
-  revalidatePath('/admin/deals');
+  revalidatePath('/admin/deals'); revalidatePath('/admin');
   revalidatePath('/deals');
   redirect('/admin/deals');
 }
@@ -288,14 +288,14 @@ export async function updateDeal(id: number, formData: FormData) {
     },
   });
 
-  revalidatePath('/admin/deals');
+  revalidatePath('/admin/deals'); revalidatePath('/admin');
   revalidatePath('/deals');
   redirect('/admin/deals');
 }
 
 export async function deleteDeal(id: number) {
   await prisma.deal.delete({ where: { id } });
-  revalidatePath('/admin/deals');
+  revalidatePath('/admin/deals'); revalidatePath('/admin');
   revalidatePath('/deals');
 }
 
@@ -313,7 +313,7 @@ export async function updateAdSpot(id: number, formData: FormData) {
     data: { name, imageUrl, linkUrl, active, sort },
   });
 
-  revalidatePath('/admin/ads');
+  revalidatePath('/admin/ads'); revalidatePath('/admin');
   redirect('/admin/ads');
 }
 
@@ -361,7 +361,7 @@ export async function createNews(formData: FormData) {
     },
   });
 
-  revalidatePath('/admin/news');
+  revalidatePath('/admin/news'); revalidatePath('/admin');
   revalidatePath('/news');
   redirect('/admin/news');
 }
@@ -396,7 +396,7 @@ export async function updateNews(id: number, formData: FormData) {
     },
   });
 
-  revalidatePath('/admin/news');
+  revalidatePath('/admin/news'); revalidatePath('/admin');
   revalidatePath('/admin/news/' + id);
   revalidatePath('/news');
   redirect('/admin/news');
@@ -404,7 +404,7 @@ export async function updateNews(id: number, formData: FormData) {
 
 export async function deleteNews(id: number) {
   await prisma.news.delete({ where: { id } });
-  revalidatePath('/admin/news');
+  revalidatePath('/admin/news'); revalidatePath('/admin');
   revalidatePath('/news');
 }
 
@@ -415,6 +415,6 @@ export async function togglePinNews(id: number) {
     where: { id },
     data: { pinned: !current.pinned },
   });
-  revalidatePath('/admin/news');
+  revalidatePath('/admin/news'); revalidatePath('/admin');
   revalidatePath('/news');
 }

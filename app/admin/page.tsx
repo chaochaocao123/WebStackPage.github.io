@@ -2,6 +2,10 @@ import Link from 'next/link';
 import { prisma } from '@/lib/db';
 import { Wrench, FolderOpen, FileText, Gift, ArrowRight, Zap, Newspaper } from 'lucide-react';
 
+// 强制动态渲染，避免 Router Cache 导致统计数据过时
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function AdminDashboard() {
   // 获取统计数据
   const [toolCount, toolWithDiscount, categoryCount, articleCount, dealCount, newsCount] = await Promise.all([
