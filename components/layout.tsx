@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Search, Menu, X, Video, MessageCircle } from 'lucide-react';
 
 const NAV = [
@@ -20,15 +19,16 @@ const QR_CODES = [
 ];
 
 export function Header() {
-  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
-    }
+    const q = searchQuery.trim();
+    if (!q) return;
+    if (typeof window === 'undefined') return;
+    // 用 window.location 跳转（硬导航到 /search 页面）— 避免 router.push 软导航竞态
+    window.location.href = `/search?q=${encodeURIComponent(q)}`;
   };
 
   return (

@@ -105,6 +105,16 @@ function ToolGridInner({ tools, categories }: ToolGridProps) {
     }
     const q = params.get('q');
     if (q) setSearch(q);
+
+    // 监听外部触发（如首页 Hero 快捷分类入口）
+    const onChangeCat = (e: Event) => {
+      const detail = (e as CustomEvent<{ cat: string }>).detail;
+      if (detail?.cat && categories.some(c => c.key === detail.cat)) {
+        setActiveCat(detail.cat);
+      }
+    };
+    window.addEventListener('kjgjs:change-cat', onChangeCat);
+    return () => window.removeEventListener('kjgjs:change-cat', onChangeCat);
   }, [categories]);
 
   // 切换分类：立即更新 state + 同步 URL（不依赖 Next 路由）

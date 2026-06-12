@@ -23,6 +23,11 @@ const navItems = [
   { href: '/admin/ads', label: '广告位', icon: Image },
 ];
 
+// 强制动态渲染：避免侧边栏菜单软导航时的 ISR 缓存竞态
+// （v11 修复：菜单点击不灵敏，要点几次才有反应）
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default function AdminLayout({
   children,
 }: {

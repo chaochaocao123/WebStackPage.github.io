@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Header, Footer, QrCodeFloat } from '@/components/layout';
 import { ToolGrid } from '@/components/tool-grid';
 import { ToolCard } from '@/components/tool-card';
+import { QuickCategoryLinks } from './_components/QuickCategoryLinks';
 import { getTools, getCategories } from '@/lib/data/tools-db';
 import { getNewsFromDB } from '@/lib/data/news';
 import { TrendingUp, FileText, Newspaper, Gift, Wrench, BookOpen, ChevronRight, Sparkles, Zap, MessageCircle } from 'lucide-react';
@@ -97,17 +98,7 @@ export default async function HomePage() {
             </div>
 
             {/* 快捷分类入口 */}
-            <div className="mt-8 flex flex-wrap gap-2">
-              {topCategories.map((cat: any) => (
-                <a
-                  key={cat.key}
-                  href={`#cat-${cat.key}`}
-                  className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 hover:border-brand-400 hover:text-brand-600 transition"
-                >
-                  {cat.label} <span className="text-xs text-slate-400">({cat.count})</span>
-                </a>
-              ))}
-            </div>
+            <QuickCategoryLinks categories={topCategories} />
           </div>
         </section>
 

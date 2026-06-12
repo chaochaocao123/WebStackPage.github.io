@@ -8,7 +8,8 @@ import { Search as SearchIcon, Newspaper, Wrench, FileText, Tag, Clock, AlertCir
 import { searchAll, highlightParts, findSnippet, type SearchTab } from '@/lib/data/search';
 import { getNewsFromDB } from '@/lib/data/news';
 import { getTools } from '@/lib/data/tools-db';
-import { SearchTabs } from './_components/SearchTabs';
+import { logSearch } from '@/lib/data/search-log';
+import { SearchResultsClient } from './_components/SearchResultsClient';
 
 const SITE_URL = 'https://kjgjs.cn';
 
@@ -83,6 +84,15 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const tab = normalizeTab(searchParams.tab);
   const results = await searchAll(rawQ);
 
+  // 关键词监控：写入 SearchLog（fire-and-forget 失败不阻塞）
+  if (rawQ.trim().length >= 2) {
+    await logSearch({
+      keyword: rawQ,
+      resultCount: results.total,
+      tab,
+    });
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -156,24 +166,18 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         ) : results.total === 0 ? (
           <NoResults q={rawQ} />
         ) : (
-          <>
-            <SearchTabs active={tab} counts={results.counts} q={rawQ} />
-            {tab === 'all' && (
-              <AllResults results={results} />
-            )}
-            {tab === 'news' && (
-              <NewsResultList items={results.news} q={rawQ} total={results.counts.news} />
-            )}
-            {tab === 'tools' && (
-              <ToolsResultList items={results.tools} q={rawQ} total={results.counts.tools} />
-            )}
-            {tab === 'articles' && (
-              <ArticlesResultList items={results.articles} q={rawQ} total={results.counts.articles} />
-            )}
-            {tab === 'deals' && (
-              <DealsResultList items={results.deals} q={rawQ} total={results.counts.deals} />
-            )}
-          </>
+          <SearchResultsClient
+            initialTab={tab}
+            initialCounts={results.counts}
+            q={rawQ}
+            panels={{
+              all: <AllResults results={results} />,
+              news: <NewsResultList items={results.news} q={rawQ} total={results.counts.news} />,
+              tools: <ToolsResultList items={results.tools} q={rawQ} total={results.counts.tools} />,
+              articles: <ArticlesResultList items={results.articles} q={rawQ} total={results.counts.articles} />,
+              deals: <DealsResultList items={results.deals} q={rawQ} total={results.counts.deals} />,
+            }}
+          />
         )}
       </main>
       <Footer />
