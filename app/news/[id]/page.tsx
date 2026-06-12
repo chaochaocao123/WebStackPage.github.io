@@ -65,9 +65,7 @@ export async function generateMetadata({
       siteName: SITE_NAME,
       title: item.title,
       description: desc,
-      images: item.cover
-        ? [{ url: item.cover, alt: item.title }]
-        : [{ url: `${SITE_URL}/og-image.png`, width: 1200, height: 630, alt: item.title }],
+      // images 由 app/news/[id]/opengraph-image.tsx 动态生成（next/og 自动接管）
       publishedTime: new Date(item.publishedAt).toISOString(),
       modifiedTime: new Date(item.updatedAt).toISOString(),
       authors: [SITE_NAME],
@@ -77,7 +75,7 @@ export async function generateMetadata({
       card: 'summary_large_image',
       title: item.title,
       description: desc,
-      images: item.cover ? [item.cover] : [`${SITE_URL}/og-image.png`],
+      // images 由 opengraph-image.tsx 动态生成
     },
   };
 }
