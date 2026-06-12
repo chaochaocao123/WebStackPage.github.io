@@ -2,26 +2,20 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { Header, Footer } from '@/components/layout';
-import { ArrowLeft, Clock, ExternalLink, FileText } from 'lucide-react';
+import { ArrowLeft, Calendar, User, Tag, ExternalLink } from 'lucide-react';
 import { prisma } from '@/lib/db';
 
 const SITE_URL = 'https://kjgjs.cn';
 const SITE_NAME = '跨境工具说';
 
 export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+export const revalidate = 600; // 10 分钟 ISR
 
-const SOURCE_LABEL: Record<string, string> = {
-  manual: '跨境工具说',
-  mjzj: '卖家之家',
-  cifnews: '雨果网',
-};
-
-/** 从 HTML content 提取纯文本前 N 字（用于 description / OG） */
+/** 从 Article.content 提取纯文本（用于 description） */
 function extractText(html: string, maxLen = 160): string {
   if (!html) return '';
   const text = html
-    .replace(/<[^>]+>/g, ' ')   // 去标签
+    .replace(/<[^>]+>/g, ' ')
     .replace(/&nbsp;/g, ' ')
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
@@ -34,33 +28,30 @@ function extractText(html: string, maxLen = 160): string {
   return text.slice(0, maxLen).replace(/[，。！？、：；]?\s*$/, '') + '…';
 }
 
-/** SEO: generateMetadata 动态注入 title/description/OG/Twitter/canonical */
+/** SEO: generateMetadata 动态 title/description/OG/Twitter/canonical */
 export async function generateMetadata({
   params,
 }: {
-  params: { id: string };
+  params: { slug: string };
 }): Promise<Metadata> {
-  const id = parseInt(params.id);
-  if (isNaN(id)) return { title: '资讯不存在' };
+  const item = await prisma.article.findUnique({ where: { slug: params.slug } });
+  if (!item) return { title: '文章不存在' };
 
-  const item = await prisma.news.findUnique({ where: { id } });
-  if (!item) return { title: '资讯不存在' };
-
-  const sourceLabel = SOURCE_LABEL[item.source] || item.source;
-  // 优先用 summary，其次用 content 抽前 160 字
-  const desc = (item.summary && item.summary.trim()) || extractText(item.content || '', 160);
+  const desc = item.excerpt || extractText(item.content || '', 160);
+  const tags: string[] = (() => {
+    try { return JSON.parse(item.tags); } catch { return []; }
+  })();
 
   return {
     title: item.title,
     description: desc,
-    keywords: [sourceLabel, '跨境电商', '亚马逊', 'TikTok', '资讯'].join(','),
-    alternates: {
-      canonical: `${SITE_URL}/news/${item.id}`,
-    },
+    keywords: [item.category || '跨境电商', ...tags, '亚马逊', 'TikTok'].filter(Boolean).join(','),
+    authors: [{ name: item.author }],
+    alternates: { canonical: `${SITE_URL}/articles/${item.slug}` },
     openGraph: {
       type: 'article',
       locale: 'zh_CN',
-      url: `${SITE_URL}/news/${item.id}`,
+      url: `${SITE_URL}/articles/${item.slug}`,
       siteName: SITE_NAME,
       title: item.title,
       description: desc,
@@ -69,8 +60,9 @@ export async function generateMetadata({
         : [{ url: `${SITE_URL}/og-image.png`, width: 1200, height: 630, alt: item.title }],
       publishedTime: new Date(item.publishedAt).toISOString(),
       modifiedTime: new Date(item.updatedAt).toISOString(),
-      authors: [SITE_NAME],
-      tags: [sourceLabel],
+      authors: [item.author],
+      section: item.category || '跨境电商',
+      tags: tags.length > 0 ? tags : undefined,
     },
     twitter: {
       card: 'summary_large_image',
@@ -81,43 +73,51 @@ export async function generateMetadata({
   };
 }
 
-export default async function NewsDetailPage({
+export default async function ArticleDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: { slug: string };
 }) {
-  const id = parseInt(params.id);
-  if (isNaN(id)) notFound();
-
-  const item = await prisma.news.findUnique({ where: { id } });
+  const item = await prisma.article.findUnique({ where: { slug: params.slug } });
   if (!item) notFound();
 
-  const sourceLabel = SOURCE_LABEL[item.source] || item.source;
+  // viewCount 异步 +1（不阻塞渲染）
+  prisma.article.update({
+    where: { id: item.id },
+    data: { viewCount: { increment: 1 } },
+  }).catch(() => {});
+
+  const tags: string[] = (() => {
+    try { return JSON.parse(item.tags); } catch { return []; }
+  })();
+
   const publishedAtStr = new Date(item.publishedAt).toLocaleString('zh-CN', {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
   });
 
-  // JSON-LD: NewsArticle + BreadcrumbList
-  const newsArticleJsonLd = {
+  const updatedAtStr = new Date(item.updatedAt).toLocaleString('zh-CN');
+
+  // JSON-LD: Article + BreadcrumbList
+  const articleJsonLd = {
     '@context': 'https://schema.org',
-    '@type': 'NewsArticle',
+    '@type': 'Article',
     headline: item.title,
-    description: (item.summary && item.summary.trim()) || extractText(item.content || '', 160),
+    description: item.excerpt || extractText(item.content || '', 160),
     image: item.cover ? [item.cover] : [`${SITE_URL}/og-image.png`],
     datePublished: new Date(item.publishedAt).toISOString(),
     dateModified: new Date(item.updatedAt).toISOString(),
-    author: { '@type': 'Organization', name: sourceLabel },
+    author: { '@type': 'Person', name: item.author },
     publisher: {
       '@type': 'Organization',
       name: SITE_NAME,
       logo: { '@type': 'ImageObject', url: `${SITE_URL}/images/logo/logo.png` },
     },
-    mainEntityOfPage: { '@type': 'WebPage', '@id': `${SITE_URL}/news/${item.id}` },
-    articleSection: '跨境电商',
+    mainEntityOfPage: { '@type': 'WebPage', '@id': `${SITE_URL}/articles/${item.slug}` },
+    articleSection: item.category || '跨境电商',
+    keywords: tags.join(','),
+    wordCount: item.content?.length || 0,
     inLanguage: 'zh-CN',
   };
 
@@ -126,8 +126,8 @@ export default async function NewsDetailPage({
     '@type': 'BreadcrumbList',
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: '首页', item: SITE_URL },
-      { '@type': 'ListItem', position: 2, name: '行业资讯', item: `${SITE_URL}/news` },
-      { '@type': 'ListItem', position: 3, name: item.title, item: `${SITE_URL}/news/${item.id}` },
+      { '@type': 'ListItem', position: 2, name: '精选文章', item: `${SITE_URL}/articles` },
+      { '@type': 'ListItem', position: 3, name: item.title, item: `${SITE_URL}/articles/${item.slug}` },
     ],
   };
 
@@ -138,7 +138,7 @@ export default async function NewsDetailPage({
         {/* JSON-LD 结构化数据 */}
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(newsArticleJsonLd) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
         />
         <script
           type="application/ld+json"
@@ -149,45 +149,49 @@ export default async function NewsDetailPage({
         <nav aria-label="Breadcrumb" className="text-xs text-slate-500 mb-4">
           <Link href="/" className="hover:text-brand-600">首页</Link>
           <span className="mx-2">/</span>
-          <Link href="/news" className="hover:text-brand-600">行业资讯</Link>
+          <Link href="/articles" className="hover:text-brand-600">精选文章</Link>
           <span className="mx-2">/</span>
           <span className="text-slate-700 line-clamp-1 inline-block max-w-[200px] align-bottom">
             {item.title}
           </span>
         </nav>
 
-        {/* 返回按钮 */}
         <Link
-          href="/news"
+          href="/articles"
           className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-brand-600 transition mb-6"
         >
           <ArrowLeft className="w-4 h-4" />
-          返回资讯列表
+          返回文章列表
         </Link>
 
-        {/* 标题区 */}
         <article className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
           <div className="p-6 sm:p-8 border-b border-slate-100">
-            <div className="flex items-center gap-3 text-xs text-slate-500 mb-4">
-              <span className="px-2 py-0.5 bg-slate-100 text-slate-700 rounded font-medium">
-                {sourceLabel}
+            {item.category && (
+              <span className="inline-block px-2 py-0.5 bg-brand-50 text-brand-700 rounded text-xs font-medium mb-3">
+                {item.category}
               </span>
-              <span className="inline-flex items-center gap-1">
-                <Clock className="w-3 h-3" />
-                {publishedAtStr}
-              </span>
-              {item.sourceType === 'crawl' && (
-                <span className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded">
-                  自动抓取
-                </span>
-              )}
-            </div>
+            )}
             <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 leading-tight">
               {item.title}
             </h1>
-            {item.summary && (
-              <p className="mt-4 text-slate-600 leading-relaxed text-base">
-                {item.summary}
+            <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 mt-4">
+              <span className="inline-flex items-center gap-1">
+                <User className="w-3 h-3" />
+                {item.author}
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <Calendar className="w-3 h-3" />
+                {publishedAtStr}
+              </span>
+              {item.updatedAt && new Date(item.updatedAt).getTime() - new Date(item.publishedAt).getTime() > 86400000 && (
+                <span className="inline-flex items-center gap-1 text-orange-600">
+                  更新于 {updatedAtStr}
+                </span>
+              )}
+            </div>
+            {item.excerpt && (
+              <p className="mt-5 text-slate-600 leading-relaxed text-base border-l-4 border-brand-200 pl-4 bg-brand-50/30 py-3">
+                {item.excerpt}
               </p>
             )}
           </div>
@@ -206,41 +210,34 @@ export default async function NewsDetailPage({
 
           {/* 正文 */}
           <div className="p-6 sm:p-8">
-            {item.content ? (
-              <div
-                className="news-content prose prose-slate max-w-none"
-                dangerouslySetInnerHTML={{ __html: item.content }}
-              />
-            ) : (
-              <div className="text-center py-10 text-slate-500">
-                <FileText className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-                <p className="text-sm">正文正在抓取中…</p>
-                <p className="text-xs text-slate-400 mt-1">
-                  下次自动抓取（每天 9:00 / 18:00）后即可阅读
-                </p>
-                {item.url && (
-                  <a
-                    href={item.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 mt-4 text-sm text-brand-600 hover:text-brand-700"
+            <div
+              className="news-content prose prose-slate max-w-none"
+              dangerouslySetInnerHTML={{ __html: item.content || '' }}
+            />
+
+            {/* 标签 */}
+            {tags.length > 0 && (
+              <div className="mt-8 pt-6 border-t border-slate-100 flex items-center gap-2 flex-wrap">
+                <Tag className="w-4 h-4 text-slate-400" />
+                {tags.map((t) => (
+                  <span
+                    key={t}
+                    className="px-2.5 py-1 bg-slate-100 text-slate-600 rounded text-xs"
                   >
-                    <ExternalLink className="w-4 h-4" />
-                    暂时查看原文
-                  </a>
-                )}
+                    {t}
+                  </span>
+                ))}
               </div>
             )}
           </div>
 
-          {/* 底部操作区 */}
           <div className="px-6 sm:px-8 py-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between text-sm">
-            <Link href="/news" className="text-slate-500 hover:text-brand-600">
+            <Link href="/articles" className="text-slate-500 hover:text-brand-600">
               ← 返回列表
             </Link>
-            {item.url && (
+            {item.source && (
               <a
-                href={item.url}
+                href={item.source}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 text-slate-500 hover:text-brand-600"
