@@ -11,6 +11,7 @@
 //   注：cheerio 仍保留在 deps 中（crawl-deals 在用）
 
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { PrismaClient } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
@@ -257,6 +258,15 @@ export async function GET(request: NextRequest) {
       pinned: false,
     },
   });
+
+  // 抓完让首页 + 新闻列表立刻失效（否则 ISR 5min 内的用户看不到新数据）
+  // 2026-06-12 v4: 加 revalidatePath 修"抓了新资讯但首页不显示"
+  try {
+    revalidatePath('/');
+    revalidatePath('/news');
+  } catch (e) {
+    console.warn(`[revalidate fail] ${(e as Error).message}`);
+  }
 
   return NextResponse.json({
     success: errors.length === 0,
