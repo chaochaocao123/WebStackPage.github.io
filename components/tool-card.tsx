@@ -1,15 +1,13 @@
 'use client';
 
 import { ExternalLink, Gift } from 'lucide-react';
-import { Tool } from '@/lib/data/tools';
+import { Tool } from '@/lib/data/tools-db';
 
 export function ToolCard({ tool, showCategory = false }: { tool: Tool; showCategory?: boolean }) {
   const targetUrl = tool.affiliateUrl || tool.url;
   const hasDiscount = !!tool.discount;
-  const domain = (() => {
-    try { return new URL(tool.url).hostname.replace('www.', ''); } catch { return ''; }
-  })();
-  const favicon = domain ? `https://www.google.com/s2/favicons?sz=64&domain=${domain}` : '';
+  // v5 性能：去 Google Favicon（国内访问慢且不可控），用 DB logo 字段，缺则首字母
+  const hasLogo = !!tool.logo;
 
   return (
     <a
@@ -28,9 +26,9 @@ export function ToolCard({ tool, showCategory = false }: { tool: Tool; showCateg
       )}
       <div className="flex items-start gap-3">
         <div className="w-12 h-12 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center overflow-hidden flex-shrink-0">
-          {favicon ? (
+          {hasLogo ? (
             <img
-              src={favicon}
+              src={tool.logo!}
               alt={tool.name}
               className="w-8 h-8 object-contain"
               onError={(e) => {
