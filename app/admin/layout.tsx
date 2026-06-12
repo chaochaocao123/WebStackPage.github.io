@@ -11,6 +11,7 @@ import {
   LogOut,
   Sparkles,
   Newspaper,
+  BarChart3,
 } from 'lucide-react';
 
 const navItems = [
@@ -21,6 +22,7 @@ const navItems = [
   { href: '/admin/articles', label: '文章管理', icon: FileText },
   { href: '/admin/deals', label: '优惠管理', icon: Gift },
   { href: '/admin/ads', label: '广告位', icon: Image },
+  { href: '/admin/search-logs', label: '搜索日志', icon: BarChart3 },
 ];
 
 // 强制动态渲染：避免侧边栏菜单软导航时的 ISR 缓存竞态
