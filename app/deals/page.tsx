@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { Header, Footer } from '@/components/layout';
 import { Gift, ExternalLink, Clock, Tag, Flame } from 'lucide-react';
 import { getDealsFromDB, DealItem } from '@/lib/data/deals';
@@ -111,19 +112,23 @@ function DealCard({ deal }: { deal: DealItem & { tool?: typeof TOOLS[number] | u
         </div>
       </div>
       <div className="flex items-start gap-4">
-        {deal.tool ? (
-          <div className="w-14 h-14 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center flex-shrink-0">
-            <img
-              src={deal.brandLogo || `https://www.google.com/s2/favicons?sz=64&domain=${new URL(deal.tool.url).hostname}`}
+        <div className="w-14 h-14 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center flex-shrink-0 relative">
+          {deal.brandLogo ? (
+            // 走 next/image 自动 WebP；缺图时显示首字母渐变 fallback
+            // 永远不调 Google Favicon（国内慢 + 不可控）
+            <Image
+              src={deal.brandLogo}
               alt={deal.brand}
-              className="w-10 h-10 object-contain"
+              width={40}
+              height={40}
+              className="object-contain"
             />
-          </div>
-        ) : (
-          <div className="w-14 h-14 rounded-lg bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center text-white text-xl font-bold flex-shrink-0">
-            {deal.brand[0]}
-          </div>
-        )}
+          ) : (
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center text-white text-base font-bold">
+              {deal.brand[0]}
+            </div>
+          )}
+        </div>
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-slate-900 group-hover:text-brand-600 transition">{deal.title}</h3>
           <div className="text-sm text-slate-500 mt-1">{deal.brand}</div>
