@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Header, Footer } from '@/components/layout';
-import { Newspaper, ExternalLink, Clock, TrendingUp, RefreshCw } from 'lucide-react';
+import { Newspaper, Clock, TrendingUp } from 'lucide-react';
 import { getNewsFromDB } from '@/lib/data/news';
 
 export const metadata = {
@@ -32,7 +32,6 @@ export default async function NewsPage() {
             <h1 className="text-2xl font-bold text-slate-900">行业资讯</h1>
           </div>
         </div>
-        {/* 优化7：修改文案 */}
         <p className="text-slate-500 mb-8">每日从权威资讯网站获取最新最热门信息，帮助大家了解前沿动态~</p>
 
         {NEWS.length === 0 ? (
@@ -47,10 +46,8 @@ export default async function NewsPage() {
           <div className="grid lg:grid-cols-3 gap-6">
             {/* 头条 */}
             {NEWS[0] && (
-              <a
-                href={NEWS[0].url}
-                target="_blank"
-                rel="noopener noreferrer"
+              <Link
+                href={`/news/${NEWS[0].id}`}
                 className="lg:col-span-2 group block bg-white border border-slate-200 rounded-xl overflow-hidden card-hover"
               >
                 {NEWS[0].cover && (
@@ -61,7 +58,7 @@ export default async function NewsPage() {
                 <div className="p-6">
                   <div className="flex items-center gap-2 text-xs text-slate-500 mb-3">
                     <span className="px-2 py-0.5 bg-orange-50 text-orange-600 rounded font-medium">头条</span>
-                    <span>{NEWS[0].source}</span>
+                    <span>{SOURCE_LABEL[NEWS[0].source] || NEWS[0].source}</span>
                     <Clock className="w-3 h-3" />
                     <span>{formatTime(NEWS[0].publishedAt)}</span>
                   </div>
@@ -70,28 +67,26 @@ export default async function NewsPage() {
                   </h2>
                   {NEWS[0].summary && <p className="text-slate-500 text-sm line-clamp-2">{NEWS[0].summary}</p>}
                 </div>
-              </a>
+              </Link>
             )}
 
             {/* 列表 */}
             <div className="space-y-3">
               {NEWS.slice(1, 6).map((item, i) => (
-                <a
+                <Link
                   key={i}
-                  href={item.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  href={`/news/${item.id}`}
                   className="group block bg-white border border-slate-200 rounded-lg p-4 card-hover"
                 >
                   <div className="text-xs text-slate-500 mb-1.5 flex items-center gap-1.5">
-                    <span className="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px]">{item.source}</span>
+                    <span className="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px]">{SOURCE_LABEL[item.source] || item.source}</span>
                     <Clock className="w-3 h-3" />
                     <span>{formatTime(item.publishedAt)}</span>
                   </div>
                   <h3 className="text-sm font-medium text-slate-900 group-hover:text-brand-600 line-clamp-2">
                     {item.title}
                   </h3>
-                </a>
+                </Link>
               ))}
             </div>
 
@@ -103,20 +98,18 @@ export default async function NewsPage() {
                 </h3>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {NEWS.slice(6).map((item, i) => (
-                    <a
+                    <Link
                       key={i}
-                      href={item.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      href={`/news/${item.id}`}
                       className="group block bg-white border border-slate-200 rounded-lg p-4 card-hover"
                     >
                       <div className="text-xs text-slate-500 mb-1.5 flex items-center gap-1.5">
-                        <span className="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px]">{item.source}</span>
+                        <span className="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px]">{SOURCE_LABEL[item.source] || item.source}</span>
                       </div>
                       <h4 className="text-sm font-medium text-slate-900 group-hover:text-brand-600 line-clamp-2">
                         {item.title}
                       </h4>
-                    </a>
+                    </Link>
                   ))}
                 </div>
               </div>

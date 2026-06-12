@@ -86,6 +86,7 @@ model News {
   summary     String?
   cover       String?
   category    String?
+  content     String?  // 完整正文 HTML（仅自动抓取时填充，详情页内嵌渲染）
   publishedAt DateTime
   crawledAt   DateTime @default(now())
   sourceType  String   @default("crawl")  // crawl / manual

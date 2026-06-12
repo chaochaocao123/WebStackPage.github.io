@@ -46,3 +46,63 @@ body {
 .animate-marquee {
   animation: marquee 30s linear infinite;
 }
+
+/* 资讯正文样式（卖家之家 mjzj 抓取内容渲染用） */
+.news-content {
+  color: rgb(51 65 85);
+  line-height: 1.8;
+  font-size: 16px;
+}
+.news-content p {
+  margin: 0 0 0.75em;
+}
+.news-content a {
+  color: rgb(37 99 235);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.news-content a:hover {
+  color: rgb(29 78 216);
+}
+.news-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 1em auto;
+  display: block;
+}
+.news-content strong {
+  font-weight: 600;
+  color: rgb(15 23 42);
+}
+.news-content em {
+  font-style: italic;
+}
+.news-content ul,
+.news-content ol {
+  margin: 0 0 1em 1.5em;
+}
+.news-content li {
+  margin-bottom: 0.25em;
+}
+.news-content h1,
+.news-content h2,
+.news-content h3,
+.news-content h4 {
+  font-weight: 700;
+  color: rgb(15 23 42);
+  margin: 1.5em 0 0.5em;
+  line-height: 1.4;
+}
+.news-content h1 { font-size: 1.5em; }
+.news-content h2 { font-size: 1.3em; }
+.news-content h3 { font-size: 1.15em; }
+.news-content h4 { font-size: 1em; }
+.news-content blockquote {
+  border-left: 4px solid rgb(226 232 240);
+  padding: 0.5em 1em;
+  margin: 1em 0;
+  color: rgb(100 116 139);
+  background: rgb(248 250 252);
+  border-radius: 0 4px 4px 0;
+}

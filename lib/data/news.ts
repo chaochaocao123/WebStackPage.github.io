@@ -14,6 +14,7 @@ export interface NewsItem {
   summary?: string | null;
   cover?: string | null;
   category?: string | null;
+  content?: string | null;
   publishedAt: string;  // ISO 时间
   crawledAt: string;
   sourceType: 'crawl' | 'manual' | string;
