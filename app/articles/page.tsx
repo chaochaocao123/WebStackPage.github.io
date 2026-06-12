@@ -2,11 +2,24 @@ import Link from 'next/link';
 import { Header, Footer } from '@/components/layout';
 import { BookOpen, Calendar, Eye, FileText } from 'lucide-react';
 import { getArticlesFromDB } from '@/lib/data/articles';
+import type { Metadata } from 'next';
 
-export const metadata = {
-  title: '精选文章 - 跨境工具说',
-  description: '跨境电商运营干货、工具评测、平台政策解读',
-  alternates: { canonical: 'https://kjgjs.cn/articles' },
+const SITE_URL = 'https://kjgjs.cn';
+const PAGE_TITLE = '精选文章 - 跨境工具说';
+const PAGE_DESC = '跨境电商运营干货、工具评测、平台政策解读';
+
+export const metadata: Metadata = {
+  title: '精选文章',
+  description: PAGE_DESC,
+  alternates: { canonical: `${SITE_URL}/articles` },
+  openGraph: {
+    type: 'website',
+    locale: 'zh_CN',
+    url: `${SITE_URL}/articles`,
+    siteName: '跨境工具说',
+    title: PAGE_TITLE,
+    description: PAGE_DESC,
+  },
 };
 
 export const dynamic = 'force-dynamic';
@@ -15,10 +28,32 @@ export const revalidate = 600; // 10 分钟重生 ISR
 export default async function ArticlesPage() {
   const articles = await getArticlesFromDB(60);
 
+  // JSON-LD: ItemList
+  const itemListJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: '跨境电商精选文章',
+    description: PAGE_DESC,
+    itemListOrder: 'https://schema.org/ItemListOrderDescending',
+    numberOfItems: articles.length,
+    itemListElement: articles.slice(0, 20).map((a, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      url: `${SITE_URL}/articles/${a.slug}`,
+      name: a.title,
+    })),
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 py-10 w-full">
+        {/* JSON-LD 结构化数据 */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListJsonLd) }}
+        />
+
         <div className="flex items-center gap-2 mb-2">
           <FileText className="w-6 h-6 text-brand-600" />
           <h1 className="text-2xl font-bold text-slate-900">精选文章</h1>

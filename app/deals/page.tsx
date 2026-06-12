@@ -3,10 +3,24 @@ import { Header, Footer } from '@/components/layout';
 import { Gift, ExternalLink, Clock, Tag, Flame } from 'lucide-react';
 import { getDealsFromDB, DealItem } from '@/lib/data/deals';
 import { TOOLS } from '@/lib/data/tools';
+import type { Metadata } from 'next';
 
-export const metadata = {
-  title: '优惠活动 - 跨境工具说',
-  description: '跨境电商工具最新优惠活动，专属折扣码',
+const SITE_URL = 'https://kjgjs.cn';
+const PAGE_TITLE = '优惠活动 - 跨境工具说';
+const PAGE_DESC = '跨境电商工具最新优惠活动，专属折扣码';
+
+export const metadata: Metadata = {
+  title: '优惠活动',
+  description: PAGE_DESC,
+  alternates: { canonical: `${SITE_URL}/deals` },
+  openGraph: {
+    type: 'website',
+    locale: 'zh_CN',
+    url: `${SITE_URL}/deals`,
+    siteName: '跨境工具说',
+    title: PAGE_TITLE,
+    description: PAGE_DESC,
+  },
 };
 
 // 把 Deal 关联到 TOOLS 信息（图标等）
@@ -21,10 +35,32 @@ export default async function DealsPage() {
   const dbDeals = await getDealsFromDB();
   const deals = dbDeals.map(enrichDeal);
 
+  // JSON-LD: ItemList
+  const itemListJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: '跨境电商工具优惠活动',
+    description: PAGE_DESC,
+    itemListOrder: 'https://schema.org/ItemListOrderDescending',
+    numberOfItems: deals.length,
+    itemListElement: deals.slice(0, 20).map((d, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      url: d.url,
+      name: d.title,
+    })),
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 py-10 w-full">
+        {/* JSON-LD 结构化数据 */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListJsonLd) }}
+        />
+
         <div className="flex items-center gap-2 mb-2">
           <Gift className="w-6 h-6 text-orange-500" />
           <h1 className="text-2xl font-bold text-slate-900">优惠活动</h1>

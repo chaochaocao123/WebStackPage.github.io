@@ -2,10 +2,24 @@ import Link from 'next/link';
 import { Header, Footer } from '@/components/layout';
 import { Newspaper, Clock, TrendingUp } from 'lucide-react';
 import { getNewsFromDB } from '@/lib/data/news';
+import type { Metadata } from 'next';
 
-export const metadata = {
-  title: '行业资讯 - 跨境工具说',
-  description: '每日更新跨境电商行业热门资讯，覆盖亚马逊、TikTok、Temu、Shopee 等平台',
+const SITE_URL = 'https://kjgjs.cn';
+const PAGE_TITLE = '行业资讯 - 跨境工具说';
+const PAGE_DESC = '每日更新跨境电商行业热门资讯，覆盖亚马逊、TikTok、Temu、Shopee 等平台';
+
+export const metadata: Metadata = {
+  title: '行业资讯',
+  description: PAGE_DESC,
+  alternates: { canonical: `${SITE_URL}/news` },
+  openGraph: {
+    type: 'website',
+    locale: 'zh_CN',
+    url: `${SITE_URL}/news`,
+    siteName: '跨境工具说',
+    title: PAGE_TITLE,
+    description: PAGE_DESC,
+  },
 };
 
 export const dynamic = 'force-dynamic';
@@ -20,10 +34,32 @@ const SOURCE_LABEL: Record<string, string> = {
 export default async function NewsPage() {
   const NEWS = await getNewsFromDB(80);
 
+  // JSON-LD: ItemList（搜索引擎富媒体列表展示）
+  const itemListJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: '跨境电商行业资讯',
+    description: PAGE_DESC,
+    itemListOrder: 'https://schema.org/ItemListOrderDescending',
+    numberOfItems: NEWS.length,
+    itemListElement: NEWS.slice(0, 20).map((n, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      url: `${SITE_URL}/news/${n.id}`,
+      name: n.title,
+    })),
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 py-10 w-full">
+        {/* JSON-LD 结构化数据 */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListJsonLd) }}
+        />
+
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <Newspaper className="w-6 h-6 text-accent-500" />
