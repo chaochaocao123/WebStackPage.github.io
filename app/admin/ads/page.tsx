@@ -63,7 +63,7 @@ export default async function AdsPage({
                     <div className="font-medium text-slate-900">{spot.name}</div>
                     {spot.imageUrl && (
                       <div className="text-xs text-slate-500 mt-1">
-                        <img src={spot.imageUrl} alt="" className="h-8 inline-block mr-2" />
+                        <img src={spot.imageUrl} alt={spot.name} className="h-8 inline-block mr-2" />
                         {spot.linkUrl && (
                           <a href={spot.linkUrl} target="_blank" rel="noopener noreferrer" className="text-brand-600 hover:underline">
                             <ExternalLink className="w-3 h-3 inline" />

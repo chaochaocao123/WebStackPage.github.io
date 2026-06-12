@@ -1,6 +1,7 @@
 'use client';
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import Image from 'next/image';
 import { Search, ExternalLink, Gift, Sparkles } from 'lucide-react';
 import { Tool } from '@/lib/data/tools-db';
 
@@ -15,6 +16,9 @@ function ToolCard({ tool, showCategory = false }: ToolCardProps) {
   const hasDiscount = !!tool.discount;
   // logo 优先：DB logo 字段 → 首字母（去掉外链 Google Favicon，国内访问慢）
   const hasLogo = !!tool.logo;
+  // next/image 加载失败时回退到首字母（替代 innerHTML hack）
+  const [logoError, setLogoError] = useState(false);
+  const showLogo = hasLogo && !logoError;
 
   return (
     <a
@@ -33,16 +37,15 @@ function ToolCard({ tool, showCategory = false }: ToolCardProps) {
       )}
 
       <div className="flex items-start gap-3">
-        <div className="w-12 h-12 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center overflow-hidden flex-shrink-0">
-          {hasLogo ? (
-            <img
+        <div className="w-12 h-12 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center overflow-hidden flex-shrink-0 relative">
+          {showLogo ? (
+            <Image
               src={tool.logo!}
               alt={tool.name}
-              className="w-8 h-8 object-contain"
-              onError={(e) => {
-                (e.target as HTMLImageElement).style.display = 'none';
-                (e.target as HTMLImageElement).parentElement!.innerHTML = `<span class="text-base font-bold text-brand-600">${tool.name[0]}</span>`;
-              }}
+              width={32}
+              height={32}
+              className="object-contain"
+              onError={() => setLogoError(true)}
             />
           ) : (
             <span className="text-base font-bold text-brand-600">{tool.name[0]}</span>
