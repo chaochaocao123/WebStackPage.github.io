@@ -91,11 +91,9 @@ function ToolGridInner({ tools, categories }: ToolGridProps) {
   const [activeCat, setActiveCat] = useState('all');
   const [search, setSearch] = useState('');
 
-  // 同步 URL query 参数
+  // 同步 URL query 参数（去掉 if，让 urlQuery 变空时也能重置 search，否则点 logo 回首页搜索框不清空）
   useEffect(() => {
-    if (urlQuery) {
-      setSearch(urlQuery);
-    }
+    setSearch(urlQuery);
   }, [urlQuery]);
 
   const filteredTools = useMemo(() => {
