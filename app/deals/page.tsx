@@ -78,7 +78,7 @@ function DealCard({ deal }: { deal: DealItem & { tool?: typeof TOOLS[number] | u
         {deal.tool ? (
           <div className="w-14 h-14 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center flex-shrink-0">
             <img
-              src={`https://www.google.com/s2/favicons?sz=64&domain=${new URL(deal.tool.url).hostname}`}
+              src={deal.brandLogo || `https://www.google.com/s2/favicons?sz=64&domain=${new URL(deal.tool.url).hostname}`}
               alt={deal.brand}
               className="w-10 h-10 object-contain"
             />
