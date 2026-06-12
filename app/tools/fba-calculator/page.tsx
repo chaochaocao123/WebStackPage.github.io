@@ -2,6 +2,24 @@
 import { useState } from 'react';
 import { Calculator, ArrowRight, Info } from 'lucide-react';
 import { Header, Footer } from '@/components/layout';
+import type { Metadata } from 'next';
+
+// 静态 metadata：FBA 利润计算器页面
+// 注：client component 不能用 generateMetadata，但静态 metadata 完全可以
+export const metadata: Metadata = {
+  title: 'FBA 利润计算器',
+  description: '输入售价、成本、重量，自动估算亚马逊 FBA 履约费、佣金、净利润和 ROI，免费使用无需登录',
+  keywords: 'FBA利润计算器,亚马逊FBA费用,FBA履约费计算,跨境电商利润,亚马逊成本核算',
+  alternates: { canonical: 'https://kjgjs.cn/tools/fba-calculator' },
+  openGraph: {
+    type: 'website',
+    locale: 'zh_CN',
+    url: 'https://kjgjs.cn/tools/fba-calculator',
+    siteName: '跨境工具说',
+    title: 'FBA 利润计算器 - 跨境工具说',
+    description: '亚马逊 FBA 费用 + 佣金 + 利润 + ROI 一键估算',
+  },
+};
 
 export default function FBACalculatorPage() {
   const [price, setPrice] = useState('29.99');
