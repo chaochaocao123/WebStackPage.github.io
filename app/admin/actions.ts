@@ -5,6 +5,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
+import { fetchFavicon } from '@/lib/data/logo-fetcher';
 
 // ============ 鉴权相关 ============
 
@@ -63,8 +64,14 @@ export async function createTool(formData: FormData) {
   const categoryKey = formData.get('categoryKey') as string;
   const affiliateUrl = formData.get('affiliateUrl') as string;
   const discount = formData.get('discount') as string;
-  const logo = formData.get('logo') as string;
+  let logo = formData.get('logo') as string;
   const featured = formData.get('featured') === 'on';
+
+  // 自动抓取 logo（如果用户没填）
+  if (!logo && url) {
+    const fetched = await fetchFavicon(url);
+    if (fetched.url) logo = fetched.url;
+  }
 
   await prisma.tool.create({
     data: {
@@ -92,8 +99,15 @@ export async function updateTool(id: number, formData: FormData) {
   const categoryKey = formData.get('categoryKey') as string;
   const affiliateUrl = formData.get('affiliateUrl') as string;
   const discount = formData.get('discount') as string;
-  const logo = formData.get('logo') as string;
+  let logo = formData.get('logo') as string;
   const featured = formData.get('featured') === 'on';
+
+  // 自动抓取 logo（如果用户清空且 url 变了）
+  const old = await prisma.tool.findUnique({ where: { id }, select: { url: true, logo: true } });
+  if (!logo && url && old?.url !== url) {
+    const fetched = await fetchFavicon(url);
+    if (fetched.url) logo = fetched.url;
+  }
 
   await prisma.tool.update({
     where: { id },
@@ -118,6 +132,70 @@ export async function deleteTool(id: number) {
   await prisma.tool.delete({ where: { id } });
   revalidatePath('/admin/tools'); revalidatePath('/admin');
   revalidatePath('/');
+}
+
+// ============ 工具 Logo 刷新 ============
+
+/** 刷新单个工具的 logo（异步抓取，写回 Tool.logo） */
+export async function refreshToolLogoAction(toolId: number): Promise<{
+  success: boolean;
+  logo: string | null;
+  source?: string;
+  error?: string;
+}> {
+  const tool = await prisma.tool.findUnique({ where: { id: toolId }, select: { url: true, name: true } });
+  if (!tool) return { success: false, logo: null, error: '工具不存在' };
+
+  const result = await fetchFavicon(tool.url);
+  if (result.url) {
+    await prisma.tool.update({ where: { id: toolId }, data: { logo: result.url } });
+    revalidatePath('/admin/tools'); revalidatePath('/');
+    return { success: true, logo: result.url, source: result.source };
+  }
+  return { success: false, logo: null, source: result.source, error: result.error };
+}
+
+/**
+ * 批量刷新工具 logo（受 Vercel 函数 10s timeout 限制，最多 8 个/批）
+ * @param batchSize 本次刷新的工具数量（默认 8）
+ * @returns { total, success, failed, results }
+ */
+export async function refreshAllLogosAction(batchSize: number = 8): Promise<{
+  total: number;
+  success: number;
+  failed: number;
+  results: Array<{ id: number; name: string; success: boolean; source?: string; error?: string }>;
+}> {
+  // 优先刷新没 logo 的（DDG fallback 也算有，但 html-link 优先）
+  const tools = await prisma.tool.findMany({
+    where: { OR: [{ logo: null }, { logo: { startsWith: 'https://icons.duckduckgo.com/' } }] },
+    select: { id: true, name: true, url: true },
+    take: batchSize,
+  });
+
+  const results: Array<{ id: number; name: string; success: boolean; source?: string; error?: string }> = [];
+  let success = 0, failed = 0;
+
+  // 并发 3（受 10s timeout 限制，避免 Vercel 函数超时）
+  const queue = [...tools];
+  async function worker() {
+    while (queue.length > 0) {
+      const t = queue.shift()!;
+      const r = await fetchFavicon(t.url);
+      if (r.url) {
+        await prisma.tool.update({ where: { id: t.id }, data: { logo: r.url } });
+        results.push({ id: t.id, name: t.name, success: true, source: r.source });
+        success++;
+      } else {
+        results.push({ id: t.id, name: t.name, success: false, source: r.source, error: r.error });
+        failed++;
+      }
+    }
+  }
+  await Promise.all(Array.from({ length: 3 }, () => worker()));
+
+  revalidatePath('/admin/tools'); revalidatePath('/');
+  return { total: tools.length, success, failed, results };
 }
 
 // ============ 分类管理 ============

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { prisma } from '@/lib/db';
 import { Plus, Search, ExternalLink, Star } from 'lucide-react';
 import { Pagination, ADMIN_PAGE_SIZE } from '../_components/Pagination';
+import { ToolRowRefreshButton, BatchRefreshButton } from './_components/LogoRefreshButtons';
 
 // 强制动态渲染，避免 Router Cache 导致翻页时统计过时
 export const dynamic = 'force-dynamic';
@@ -61,13 +62,16 @@ export default async function ToolsPage({
             共 {totalCount} 条 · 本页 {startIdx}-{endIdx}
           </p>
         </div>
-        <Link
-          href="/admin/tools/new"
-          className="inline-flex items-center gap-2 bg-brand-600 text-white px-4 py-2 rounded-lg hover:bg-brand-700 transition"
-        >
-          <Plus className="w-4 h-4" />
-          添加工具
-        </Link>
+        <div className="flex items-center gap-3">
+          <BatchRefreshButton />
+          <Link
+            href="/admin/tools/new"
+            className="inline-flex items-center gap-2 bg-brand-600 text-white px-4 py-2 rounded-lg hover:bg-brand-700 transition"
+          >
+            <Plus className="w-4 h-4" />
+            添加工具
+          </Link>
+        </div>
       </div>
 
       {/* 搜索和筛选 */}
@@ -169,6 +173,7 @@ export default async function ToolsPage({
                       >
                         <ExternalLink className="w-4 h-4" />
                       </a>
+                      <ToolRowRefreshButton toolId={tool.id} toolName={tool.name} />
                       <Link
                         href={`/admin/tools/${tool.id}`}
                         className="px-3 py-1.5 text-sm bg-slate-100 text-slate-700 rounded hover:bg-slate-200 transition"
