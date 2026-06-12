@@ -51,12 +51,12 @@ export function Breadcrumb({ items, truncateLast = false, className = 'text-xs t
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
-      <nav aria-label="Breadcrumb" className={className}>
+      <nav aria-label="Breadcrumb" className={`${className} flex flex-wrap items-center max-w-full`}>
         {items.map((item, idx) => {
           const isLast = idx === items.length - 1;
           const showTruncate = truncateLast && isLast;
           return (
-            <span key={idx}>
+            <span key={idx} className="inline-flex items-center min-w-0">
               {item.href && !isLast ? (
                 <Link href={item.href} className="hover:text-brand-600">
                   {item.name}
@@ -71,7 +71,7 @@ export function Breadcrumb({ items, truncateLast = false, className = 'text-xs t
                   title={item.title || item.name}
                 >
                   {showTruncate ? (
-                    <span className="line-clamp-1 inline-block max-w-[200px] align-bottom">
+                    <span className="inline-block max-w-[260px] truncate align-middle">
                       {item.name}
                     </span>
                   ) : (
@@ -79,7 +79,7 @@ export function Breadcrumb({ items, truncateLast = false, className = 'text-xs t
                   )}
                 </span>
               )}
-              {!isLast && <span className="mx-2">/</span>}
+              {!isLast && <span className="mx-2 shrink-0">/</span>}
             </span>
           );
         })}
