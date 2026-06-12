@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import Image from 'next/image';
 import { Header, Footer } from '@/components/layout';
 import { Breadcrumb } from '@/components/Breadcrumb';
 import { ToolCard } from '@/components/tool-card';
@@ -247,8 +248,8 @@ function NewsResultList({ items, q, total, compact = false }: { items: Awaited<R
           >
             <div className="flex items-start gap-4">
               {n.cover && !compact && (
-                <div className="w-32 h-20 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0">
-                  <img src={n.cover} alt={n.title} className="w-full h-full object-cover" />
+                <div className="w-32 h-20 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0 relative">
+                  <Image src={n.cover} alt={n.title} fill sizes="128px" className="object-cover" />
                 </div>
               )}
               <div className="flex-1 min-w-0">
@@ -312,8 +313,8 @@ function ArticlesResultList({ items, q, total, compact = false }: { items: Await
           >
             <div className="flex items-start gap-4">
               {a.cover && !compact && (
-                <div className="w-32 h-20 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0">
-                  <img src={a.cover} alt={a.title} className="w-full h-full object-cover" />
+                <div className="w-32 h-20 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0 relative">
+                  <Image src={a.cover} alt={a.title} fill sizes="128px" className="object-cover" />
                 </div>
               )}
               <div className="flex-1 min-w-0">
@@ -361,8 +362,8 @@ function DealsResultList({ items, q, total, compact = false }: { items: Awaited<
           >
             <div className="flex items-start gap-4">
               {d.brandLogo && !compact && (
-                <div className="w-12 h-12 bg-slate-50 rounded-lg overflow-hidden flex-shrink-0 border border-slate-200 flex items-center justify-center">
-                  <img src={d.brandLogo} alt={d.brand} className="w-8 h-8 object-contain" />
+                <div className="w-12 h-12 bg-slate-50 rounded-lg overflow-hidden flex-shrink-0 border border-slate-200 flex items-center justify-center relative">
+                  <Image src={d.brandLogo} alt={d.brand} width={32} height={32} className="object-contain" />
                 </div>
               )}
               <div className="flex-1 min-w-0">

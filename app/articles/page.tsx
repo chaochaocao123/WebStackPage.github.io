@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { Header, Footer } from '@/components/layout';
 import { BookOpen, Calendar, Eye, FileText } from 'lucide-react';
 import { getArticlesFromDB } from '@/lib/data/articles';
@@ -82,8 +83,14 @@ function ArticleCard({ article }: { article: { slug: string; title: string; exce
       className="group bg-white border border-slate-200 rounded-xl overflow-hidden card-hover"
     >
       {article.cover && (
-        <div className="aspect-video bg-slate-100 overflow-hidden">
-          <img src={article.cover} alt={article.title} className="w-full h-full object-cover group-hover:scale-105 transition" loading="lazy" />
+        <div className="aspect-video bg-slate-100 overflow-hidden relative">
+          <Image
+            src={article.cover}
+            alt={article.title}
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            className="object-cover group-hover:scale-105 transition"
+          />
         </div>
       )}
       <div className="p-5">

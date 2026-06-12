@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { Header, Footer } from '@/components/layout';
 import { Newspaper, Clock, TrendingUp } from 'lucide-react';
 import { getNewsFromDB } from '@/lib/data/news';
@@ -85,8 +86,14 @@ export default async function NewsPage() {
                 className="lg:col-span-2 group block bg-white border border-slate-200 rounded-xl overflow-hidden card-hover"
               >
                 {NEWS[0].cover && (
-                  <div className="aspect-[2/1] bg-slate-100 overflow-hidden">
-                    <img src={NEWS[0].cover} alt={NEWS[0].title} className="w-full h-full object-cover group-hover:scale-105 transition" />
+                  <div className="aspect-[2/1] bg-slate-100 overflow-hidden relative">
+                    <Image
+                      src={NEWS[0].cover}
+                      alt={NEWS[0].title}
+                      fill
+                      sizes="(max-width: 1024px) 100vw, 66vw"
+                      className="object-cover group-hover:scale-105 transition"
+                    />
                   </div>
                 )}
                 <div className="p-6">
