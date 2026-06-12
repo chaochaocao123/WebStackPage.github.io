@@ -3,6 +3,7 @@ import { Header, Footer, QrCodeFloat } from '@/components/layout';
 import { ToolGrid } from '@/components/tool-grid';
 import { ToolCard } from '@/components/tool-card';
 import { getTools, getCategories } from '@/lib/data/tools-db';
+import { getNewsFromDB } from '@/lib/data/news';
 import { TrendingUp, FileText, Newspaper, Gift, Wrench, BookOpen, ChevronRight, Sparkles, Zap, MessageCircle } from 'lucide-react';
 
 // 首页 - 工具导航为主
@@ -14,6 +15,12 @@ export default async function HomePage() {
   // 从数据库获取数据
   const tools = await getTools();
   const categories = await getCategories();
+  // 最新资讯（首页滚动条用，取 8 条）
+  const latestNews = (await getNewsFromDB(8)).map(n => ({
+    id: n.id,
+    title: n.title,
+    publishedAt: n.publishedAt,
+  }));
   
   // 取部分推荐工具到 Hero 区
   const featuredTools = tools.filter((t: any) => t.discount).slice(0, 8);
@@ -105,7 +112,7 @@ export default async function HomePage() {
         </section>
 
         {/* 优化9：自动滚动资讯区域 */}
-        <MarqueeNews />
+        <MarqueeNews news={latestNews} />
 
         {/* 限时优惠工具 */}
         {featuredTools.length > 0 && (
@@ -206,19 +213,26 @@ export default async function HomePage() {
   );
 }
 
-// 优化9：自动滚动资讯组件 (Mock数据)
-function MarqueeNews() {
-  // TODO: 等资讯抓取功能上线后替换为真实数据
-  const mockNews = [
-    { id: 1, title: '亚马逊将于2026年7月27日起实施产品标题新规', time: '28分钟前' },
-    { id: 2, title: '我国质量认证国际互认取得显著进展', time: '27分钟前' },
-    { id: 3, title: '谷歌Gemini推出小企业新功能，可连接Google服务', time: '17分钟前' },
-    { id: 4, title: 'Temu半托管模式再升级，物流时效要求调整', time: '2小时前' },
-    { id: 5, title: '亚马逊FBA费用变更通知，多类目仓储费上涨', time: '3小时前' },
-    { id: 6, title: 'TikTok Shop美国市场Q2GMV同比增长156%', time: '5小时前' },
-    { id: 7, title: '2026年跨境电商行业趋势报告发布', time: '昨天' },
-    { id: 8, title: 'Shopee更新卖家保护政策，退货率阈值调整', time: '昨天' },
-  ];
+// 优化9：自动滚动资讯组件 (动态数据，从数据库读取最新资讯)
+function relativeTime(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  if (diff < 0) return '刚刚';
+  const min = Math.floor(diff / 60000);
+  if (min < 1) return '刚刚';
+  if (min < 60) return `${min}分钟前`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}小时前`;
+  const day = Math.floor(hr / 24);
+  if (day < 7) return `${day}天前`;
+  const week = Math.floor(day / 7);
+  if (week < 4) return `${week}周前`;
+  return new Date(iso).toLocaleDateString('zh-CN');
+}
+
+function MarqueeNews({ news }: { news: { id: number; title: string; publishedAt: string }[] }) {
+  if (!news.length) return null;
+  // 复制一份让滚动更顺滑
+  const items = [...news, ...news];
 
   return (
     <section className="py-5">
@@ -233,15 +247,19 @@ function MarqueeNews() {
           {/* 滚动区域 */}
           <div className="relative flex-1 overflow-hidden">
             <div className="animate-marquee whitespace-nowrap">
-              {[...mockNews, ...mockNews].map((item, idx) => (
+              {items.map((item, idx) => (
                 <span key={`${item.id}-${idx}`} className="inline-flex items-center">
                   <a
-                    href="/news"
+                    href={`/news/${item.id}`}
                     className="text-sm text-slate-700 hover:text-brand-600 transition-colors"
+                    title={item.title}
                   >
                     {item.title}
                   </a>
-                  <span className="mx-4 text-slate-300">|</span>
+                  <span className="mx-3 text-xs text-slate-400 flex-shrink-0">
+                    {relativeTime(item.publishedAt)}
+                  </span>
+                  <span className="mx-3 text-slate-300">|</span>
                 </span>
               ))}
             </div>
