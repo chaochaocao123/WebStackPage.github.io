@@ -1,7 +1,8 @@
 import { ImageResponse } from 'next/og';
 import { prisma } from '@/lib/db';
 
-export const runtime = 'edge';
+// nodejs runtime：Prisma ORM 不支持 edge runtime
+export const runtime = 'nodejs';
 export const alt = '跨境工具说精选文章';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';

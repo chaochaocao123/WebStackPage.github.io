@@ -1,7 +1,9 @@
 import { ImageResponse } from 'next/og';
 import { prisma } from '@/lib/db';
 
-export const runtime = 'edge';
+// nodejs runtime：Prisma ORM 不支持 edge runtime（需要 Accelerate/Data Proxy）
+// next/og 在 nodejs runtime 下也支持 ImageResponse，代价是冷启动稍慢（~500ms）
+export const runtime = 'nodejs';
 export const alt = '跨境工具说资讯';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
