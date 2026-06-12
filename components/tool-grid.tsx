@@ -1,6 +1,6 @@
 'use client';
-import { useState, useMemo, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { Search, ExternalLink, Gift, Sparkles } from 'lucide-react';
 import { Tool } from '@/lib/data/tools-db';
 
@@ -83,18 +83,46 @@ export interface ToolGridProps {
   categories: { key: string; label: string; count: number }[];
 }
 
-// 包装组件，支持 URL query 参数搜索
+// 包装组件，支持 URL query 参数搜索 + 分类
 function ToolGridInner({ tools, categories }: ToolGridProps) {
+  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const urlQuery = searchParams.get('q') || '';
+  const urlCat = searchParams.get('cat') || 'all';
 
-  const [activeCat, setActiveCat] = useState('all');
-  const [search, setSearch] = useState('');
+  // 验证 cat 是否在合法集合内（防 URL 写脏数据）
+  const validCat = useMemo(
+    () => (categories.some(c => c.key === urlCat) ? urlCat : 'all'),
+    [categories, urlCat]
+  );
 
-  // 同步 URL query 参数（去掉 if，让 urlQuery 变空时也能重置 search，否则点 logo 回首页搜索框不清空）
+  const [activeCat, setActiveCat] = useState(validCat);
+  const [search, setSearch] = useState(urlQuery);
+
+  // 同步 URL → state：URL 变空时（点 logo 回首页）也能重置
   useEffect(() => {
     setSearch(urlQuery);
   }, [urlQuery]);
+
+  useEffect(() => {
+    setActiveCat(validCat);
+  }, [validCat]);
+
+  // 切换分类：写进 URL（不刷页，状态可分享）
+  const handleCatChange = useCallback(
+    (cat: string) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (cat === 'all') {
+        params.delete('cat');
+      } else {
+        params.set('cat', cat);
+      }
+      const qs = params.toString();
+      router.replace(`${pathname}${qs ? `?${qs}` : ''}`, { scroll: false });
+    },
+    [pathname, router, searchParams]
+  );
 
   const filteredTools = useMemo(() => {
     let result = tools;
@@ -140,7 +168,7 @@ function ToolGridInner({ tools, categories }: ToolGridProps) {
           {categories.map(cat => (
             <button
               key={cat.key}
-              onClick={() => setActiveCat(cat.key)}
+              onClick={() => handleCatChange(cat.key)}
               className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
                 activeCat === cat.key
                   ? 'bg-brand-600 text-white shadow-md shadow-brand-200'
