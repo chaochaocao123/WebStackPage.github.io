@@ -1,69 +1,28 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 
-// 简单的 HMAC 签名验证
-async function verifySession(token: string): Promise<boolean> {
-  if (!token || !process.env.SESSION_SECRET) return false;
-  
-  try {
-    const [payloadB64, signature] = token.split('.');
-    if (!payloadB64 || !signature) return false;
-
-    // 验证签名
-    const encoder = new TextEncoder();
-    const key = await crypto.subtle.importKey(
-      'raw',
-      encoder.encode(process.env.SESSION_SECRET),
-      { name: 'HMAC', hash: 'SHA-256' },
-      false,
-      ['verify']
-    );
-
-    const payloadBytes = encoder.encode(payloadB64);
-    const signatureBytes = Uint8Array.from(atob(signature), c => c.charCodeAt(0));
-    
-    const valid = await crypto.subtle.verify(
-      'HMAC',
-      key,
-      signatureBytes,
-      payloadBytes
-    );
-
-    if (!valid) return false;
-
-    // 检查过期
-    const payload = JSON.parse(atob(payloadB64));
-    return payload.exp > Date.now();
-  } catch {
-    return false;
-  }
-}
-
-export async function middleware(request: NextRequest) {
+// v5 性能：给首页 + sitemap/robots 加 Vercel CDN 缓存头
+// - s-maxage=60：CDN（首尔边缘 icn1）缓存 60s，国内访问直接命中不再回 iad1 跑 SSR
+// - stale-while-revalidate=600：缓存过期后 10 分钟内用旧 HTML 顶住，同时后台重新生成
+// - max-age=0：浏览器不缓存（首页内容变动频繁，浏览器直接拿 CDN 的最新）
+// - ISR revalidate=300：源头每 5 分钟重新生成（fallback）
+export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // 允许登录页和静态资源
-  if (
-    pathname.startsWith('/admin/login') ||
-    pathname.startsWith('/_next') ||
-    pathname.startsWith('/favicon') ||
-    pathname.includes('.')
-  ) {
-    return NextResponse.next();
+  if (pathname === '/') {
+    const response = NextResponse.next();
+    response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=600');
+    return response;
   }
 
-  // 拦截 /admin/* 路由
-  if (pathname.startsWith('/admin')) {
-    const sessionToken = request.cookies.get('admin_session')?.value;
-
-    if (!(await verifySession(sessionToken || ''))) {
-      return NextResponse.redirect(new URL('/admin/login', request.url));
-    }
+  if (pathname === '/sitemap.xml' || pathname === '/robots.txt') {
+    const response = NextResponse.next();
+    response.headers.set('Cache-Control', 'public, s-maxage=600, stale-while-revalidate=1200');
+    return response;
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/admin/:path*'],
+  matcher: ['/', '/sitemap.xml', '/robots.txt'],
 };
