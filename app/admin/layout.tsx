@@ -30,8 +30,8 @@ export default function AdminLayout({
 }) {
   return (
     <div className="min-h-screen bg-slate-100 flex">
-      {/* 侧边栏 */}
-      <aside className="w-64 bg-white border-r border-slate-200 flex flex-col">
+      {/* 侧边栏：按内容自适应高度，去掉 min-h-screen 避免底部留白 */}
+      <aside className="w-64 bg-white border-r border-slate-200 flex flex-col self-start">
         <div className="p-4 border-b border-slate-200">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center">
