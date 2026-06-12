@@ -9,6 +9,8 @@ export interface Tool {
   category: string;
   affiliateUrl: string;
   discount: string;
+  logo?: string | null;
+  featured?: boolean;
 }
 
 // 获取所有分类
@@ -51,6 +53,8 @@ export async function getTools() {
     category: t.categoryKey,
     affiliateUrl: t.affiliateUrl,
     discount: t.discount,
+    logo: t.logo,
+    featured: t.featured,
   }));
 }
 

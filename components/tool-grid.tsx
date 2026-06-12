@@ -2,7 +2,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Search, ExternalLink, Gift, Sparkles } from 'lucide-react';
-import { TOOLS, CATEGORIES, Tool } from '@/lib/data/tools';
+import { Tool } from '@/lib/data/tools-db';
 
 interface ToolCardProps {
   tool: Tool;
@@ -13,17 +13,8 @@ function ToolCard({ tool, showCategory = false }: ToolCardProps) {
   // 优先跳推广链接，否则跳官网
   const targetUrl = tool.affiliateUrl || tool.url;
   const hasDiscount = !!tool.discount;
-  const domain = (() => {
-    try {
-      const u = new URL(tool.url);
-      return u.hostname.replace('www.', '');
-    } catch {
-      return '';
-    }
-  })();
-  
-  // 用 Google S2 获取 favicon（更稳定）
-  const favicon = domain ? `https://www.google.com/s2/favicons?sz=64&domain=${domain}` : '';
+  // logo 优先：DB logo 字段 → 首字母（去掉外链 Google Favicon，国内访问慢）
+  const hasLogo = !!tool.logo;
 
   return (
     <a
@@ -40,12 +31,12 @@ function ToolCard({ tool, showCategory = false }: ToolCardProps) {
           </div>
         </div>
       )}
-      
+
       <div className="flex items-start gap-3">
         <div className="w-12 h-12 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center overflow-hidden flex-shrink-0">
-          {favicon ? (
+          {hasLogo ? (
             <img
-              src={favicon}
+              src={tool.logo!}
               alt={tool.name}
               className="w-8 h-8 object-contain"
               onError={(e) => {
@@ -74,7 +65,7 @@ function ToolCard({ tool, showCategory = false }: ToolCardProps) {
           )}
         </div>
       </div>
-      
+
       {hasDiscount && (
         <div className="mt-3 pt-3 border-t border-slate-100">
           <div className="text-xs text-slate-600 line-clamp-2 leading-relaxed">
@@ -87,11 +78,16 @@ function ToolCard({ tool, showCategory = false }: ToolCardProps) {
   );
 }
 
+export interface ToolGridProps {
+  tools: Tool[];
+  categories: { key: string; label: string; count: number }[];
+}
+
 // 包装组件，支持 URL query 参数搜索
-function ToolGridInner() {
+function ToolGridInner({ tools, categories }: ToolGridProps) {
   const searchParams = useSearchParams();
   const urlQuery = searchParams.get('q') || '';
-  
+
   const [activeCat, setActiveCat] = useState('all');
   const [search, setSearch] = useState('');
 
@@ -103,20 +99,20 @@ function ToolGridInner() {
   }, [urlQuery]);
 
   const filteredTools = useMemo(() => {
-    let result = TOOLS;
+    let result = tools;
     if (activeCat !== 'all') {
       result = result.filter(t => t.category === activeCat);
     }
     if (search.trim()) {
       const kw = search.toLowerCase();
-      result = result.filter(t => 
-        t.name.toLowerCase().includes(kw) || 
+      result = result.filter(t =>
+        t.name.toLowerCase().includes(kw) ||
         t.business.toLowerCase().includes(kw) ||
         t.category.toLowerCase().includes(kw)
       );
     }
     return result;
-  }, [activeCat, search]);
+  }, [tools, activeCat, search]);
 
   return (
     <div>
@@ -143,7 +139,7 @@ function ToolGridInner() {
       {/* 分类 Tab */}
       <div className="mb-6 overflow-x-auto scrollbar-hide">
         <div className="flex gap-2 pb-2 min-w-max">
-          {CATEGORIES.map(cat => (
+          {categories.map(cat => (
             <button
               key={cat.key}
               onClick={() => setActiveCat(cat.key)}
@@ -198,7 +194,7 @@ function ToolGridInner() {
 // 导出包装组件，处理 Suspense
 import { Suspense } from 'react';
 
-export function ToolGrid() {
+export function ToolGrid(props: ToolGridProps) {
   return (
     <Suspense fallback={
       <div className="animate-pulse">
@@ -215,7 +211,7 @@ export function ToolGrid() {
         </div>
       </div>
     }>
-      <ToolGridInner />
+      <ToolGridInner {...props} />
     </Suspense>
   );
 }

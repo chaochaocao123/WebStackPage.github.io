@@ -6,9 +6,10 @@ import { getTools, getCategories } from '@/lib/data/tools-db';
 import { TrendingUp, FileText, Newspaper, Gift, Wrench, BookOpen, ChevronRight, Sparkles, Zap, MessageCircle } from 'lucide-react';
 
 // 首页 - 工具导航为主
-// 关键：动态渲染，保证后台改数据后用户访问立即看到
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+// v5 性能优化：首页 5 分钟 ISR 缓存，工具数据几小时才变，缓存对用户无感但首屏立省 700ms
+// admin mutations 已 revalidatePath('/')，后台改完 5 分钟内自动刷新
+export const revalidate = 300;
+export const dynamicParams = true;
 export default async function HomePage() {
   // 从数据库获取数据
   const tools = await getTools();
@@ -142,7 +143,7 @@ export default async function HomePage() {
               收录 <span className="font-semibold text-slate-900">{tools.length}</span> 个
             </div>
           </div>
-          <ToolGrid />
+          <ToolGrid tools={tools} categories={categories} />
         </section>
 
         {/* 内容入口区 */}
