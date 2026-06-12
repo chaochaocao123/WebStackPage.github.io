@@ -153,18 +153,10 @@ export default async function NewsDetailPage({
         <article className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
           <div className="p-6 sm:p-8 border-b border-slate-100">
             <div className="flex items-center gap-3 text-xs text-slate-500 mb-4">
-              <span className="px-2 py-0.5 bg-slate-100 text-slate-700 rounded font-medium">
-                {sourceLabel}
-              </span>
               <span className="inline-flex items-center gap-1">
                 <Clock className="w-3 h-3" />
                 {publishedAtStr}
               </span>
-              {item.sourceType === 'crawl' && (
-                <span className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded">
-                  自动抓取
-                </span>
-              )}
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 leading-tight">
               {item.title}
@@ -198,9 +190,9 @@ export default async function NewsDetailPage({
             ) : (
               <div className="text-center py-10 text-slate-500">
                 <FileText className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-                <p className="text-sm">正文正在抓取中…</p>
+                <p className="text-sm">正文准备中…</p>
                 <p className="text-xs text-slate-400 mt-1">
-                  下次自动抓取（每天 9:00 / 18:00）后即可阅读
+                  内容正在完善中…
                 </p>
                 {item.url && (
                   <a

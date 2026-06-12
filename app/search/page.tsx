@@ -73,12 +73,6 @@ export function generateMetadata({ searchParams }: SearchPageProps): Metadata {
   };
 }
 
-const SOURCE_LABEL: Record<string, string> = {
-  mjzj: '卖家之家',
-  cifnews: '雨果网',
-  manual: '跨境工具说',
-};
-
 export default async function SearchPage({ searchParams }: SearchPageProps) {
   const rawQ = searchParams.q || '';
   const tab = normalizeTab(searchParams.tab);
@@ -258,9 +252,6 @@ function NewsResultList({ items, q, total, compact = false }: { items: Awaited<R
               )}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 text-xs text-slate-500 mb-2">
-                  <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded font-medium">
-                    {SOURCE_LABEL[n.source] || n.source}
-                  </span>
                   {n.category && (
                     <span className="px-2 py-0.5 bg-orange-50 text-orange-600 rounded">{n.category}</span>
                   )}
@@ -479,9 +470,6 @@ async function NoResults({ q }: { q: string }) {
                 className="group block bg-white border border-slate-200 rounded-xl p-4 card-hover"
               >
                 <div className="flex items-center gap-2 text-xs text-slate-500 mb-1.5">
-                  <span className="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px]">
-                    {SOURCE_LABEL[n.source] || n.source}
-                  </span>
                   <Clock className="w-3 h-3" />
                   <span>{formatTime(n.publishedAt)}</span>
                 </div>

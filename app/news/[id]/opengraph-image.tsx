@@ -44,6 +44,10 @@ export default async function NewsOpengraphImage({ params }: { params: { id: str
 
   const sourceLabel = SOURCE_LABEL[item.source] || item.source || '跨境工具说';
   const desc = (item.summary && item.summary.trim()) || extractText(item.content || '', 80);
+  const formatDate = (iso: string | Date) => {
+    const d = new Date(iso);
+    return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
+  };
 
   return new ImageResponse(
     (
@@ -116,7 +120,7 @@ export default async function NewsOpengraphImage({ params }: { params: { id: str
               alignItems: 'center',
             }}
           >
-            来源 · {sourceLabel}
+            {formatDate(item.publishedAt)}
           </div>
         </div>
 
