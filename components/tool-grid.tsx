@@ -1,6 +1,5 @@
 'use client';
-import { useState, useMemo, useEffect, useCallback } from 'react';
-import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
 import { Search, ExternalLink, Gift, Sparkles } from 'lucide-react';
 import { Tool } from '@/lib/data/tools-db';
@@ -88,44 +87,51 @@ export interface ToolGridProps {
 
 // 包装组件，支持 URL query 参数搜索 + 分类
 function ToolGridInner({ tools, categories }: ToolGridProps) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const urlQuery = searchParams.get('q') || '';
-  const urlCat = searchParams.get('cat') || 'all';
+  // 用 window.location 读 URL 参数（不依赖 useSearchParams）
+  // — 原因：ISR 缓存页面 + useSearchParams + router.replace 三件套有竞态，
+  //   会导致 Tab 点击响应延迟/卡顿
+  // — 替代方案：setState 立即更新（0 延迟）+ window.history.replaceState 异步同步 URL
+  // — SSR 时 window 不存在，所以用 'all' 兜底，挂载后用 useEffect 从 URL 读真实值
+  const [activeCat, setActiveCat] = useState('all');
+  const [search, setSearch] = useState('');
 
-  // 验证 cat 是否在合法集合内（防 URL 写脏数据）
-  const validCat = useMemo(
-    () => (categories.some(c => c.key === urlCat) ? urlCat : 'all'),
-    [categories, urlCat]
-  );
-
-  const [activeCat, setActiveCat] = useState(validCat);
-  const [search, setSearch] = useState(urlQuery);
-
-  // 同步 URL → state：URL 变空时（点 logo 回首页）也能重置
+  // 挂载时从 URL 读初始值（分享链接 / 直接打开 cat=xxx）
   useEffect(() => {
-    setSearch(urlQuery);
-  }, [urlQuery]);
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const cat = params.get('cat');
+    if (cat && categories.some(c => c.key === cat)) {
+      setActiveCat(cat);
+    }
+    const q = params.get('q');
+    if (q) setSearch(q);
+  }, [categories]);
 
-  useEffect(() => {
-    setActiveCat(validCat);
-  }, [validCat]);
+  // 切换分类：立即更新 state + 同步 URL（不依赖 Next 路由）
+  const handleCatChange = (cat: string) => {
+    setActiveCat(cat); // 立即（核心）
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    if (cat === 'all') {
+      url.searchParams.delete('cat');
+    } else {
+      url.searchParams.set('cat', cat);
+    }
+    window.history.replaceState(null, '', url.toString());
+  };
 
-  // 切换分类：写进 URL（不刷页，状态可分享）
-  const handleCatChange = useCallback(
-    (cat: string) => {
-      const params = new URLSearchParams(searchParams.toString());
-      if (cat === 'all') {
-        params.delete('cat');
-      } else {
-        params.set('cat', cat);
-      }
-      const qs = params.toString();
-      router.replace(`${pathname}${qs ? `?${qs}` : ''}`, { scroll: false });
-    },
-    [pathname, router, searchParams]
-  );
+  // 搜索框变化：也同步到 URL（保持分享能力）
+  const handleSearchChange = (v: string) => {
+    setSearch(v);
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    if (v.trim()) {
+      url.searchParams.set('q', v);
+    } else {
+      url.searchParams.delete('q');
+    }
+    window.history.replaceState(null, '', url.toString());
+  };
 
   const filteredTools = useMemo(() => {
     let result = tools;
@@ -152,12 +158,12 @@ function ToolGridInner({ tools, categories }: ToolGridProps) {
           type="text"
           placeholder="搜索工具名称、功能、分类..."
           value={search}
-          onChange={e => setSearch(e.target.value)}
+          onChange={e => handleSearchChange(e.target.value)}
           className="flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400"
         />
         {search && (
           <button
-            onClick={() => setSearch('')}
+            onClick={() => handleSearchChange('')}
             className="text-xs text-slate-500 hover:text-slate-700"
           >
             清除
