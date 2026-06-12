@@ -131,3 +131,10 @@ export function Pagination({
     </div>
   );
 }
+
+
+/**
+ * Admin 列表页统一每页条数（news/articles/tools/deals/ads）
+ * 修改此处即可统一调整 5 个列表页的分页大小
+ */
+export const ADMIN_PAGE_SIZE = 10;

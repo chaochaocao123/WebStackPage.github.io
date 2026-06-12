@@ -1,9 +1,7 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/db';
 import { Plus, Search, ExternalLink, Star } from 'lucide-react';
-import { Pagination } from '../_components/Pagination';
-
-const PAGE_SIZE = 20;
+import { Pagination, ADMIN_PAGE_SIZE } from '../_components/Pagination';
 
 // 强制动态渲染，避免 Router Cache 导致翻页时统计过时
 export const dynamic = 'force-dynamic';
@@ -36,17 +34,17 @@ export default async function ToolsPage({
       where,
       include: { category: true },
       orderBy: [{ featured: 'desc' }, { sort: 'asc' }],
-      skip: (page - 1) * PAGE_SIZE,
-      take: PAGE_SIZE,
+      skip: (page - 1) * ADMIN_PAGE_SIZE,
+      take: ADMIN_PAGE_SIZE,
     }),
     prisma.tool.count({ where }),
     prisma.category.findMany({ orderBy: { sort: 'asc' } }),
   ]);
 
-  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(totalCount / ADMIN_PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
-  const startIdx = totalCount === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
-  const endIdx = Math.min(safePage * PAGE_SIZE, totalCount);
+  const startIdx = totalCount === 0 ? 0 : (safePage - 1) * ADMIN_PAGE_SIZE + 1;
+  const endIdx = Math.min(safePage * ADMIN_PAGE_SIZE, totalCount);
 
   // 构造分页组件用的 query string（不含 page 参数）
   const queryStringParts: string[] = [];

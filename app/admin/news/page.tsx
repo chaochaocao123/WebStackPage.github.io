@@ -3,7 +3,7 @@ import { prisma } from '@/lib/db';
 import { Plus, ExternalLink, Pin } from 'lucide-react';
 import { deleteNews, togglePinNews } from '../actions';
 import { DeleteRowButton } from '../_components/DeleteWithConfirm';
-import { Pagination } from '../_components/Pagination';
+import { Pagination, ADMIN_PAGE_SIZE } from '../_components/Pagination';
 
 const SOURCE_LABEL: Record<string, string> = {
   manual: '跨境工具说',
@@ -12,8 +12,6 @@ const SOURCE_LABEL: Record<string, string> = {
   wearesellers: 'WeAreSellers',
   cifnews: '雨果网',
 };
-
-const PAGE_SIZE = 20;
 
 // 强制动态渲染，避免 Router Cache 导致翻页时统计过时
 export const dynamic = 'force-dynamic';
@@ -30,15 +28,15 @@ export default async function NewsPage({
     prisma.news.count(),
     prisma.news.findMany({
       orderBy: [{ pinned: 'desc' }, { publishedAt: 'desc' }],
-      skip: (page - 1) * PAGE_SIZE,
-      take: PAGE_SIZE,
+      skip: (page - 1) * ADMIN_PAGE_SIZE,
+      take: ADMIN_PAGE_SIZE,
     }),
   ]);
 
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(total / ADMIN_PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
-  const startIdx = total === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
-  const endIdx = Math.min(safePage * PAGE_SIZE, total);
+  const startIdx = total === 0 ? 0 : (safePage - 1) * ADMIN_PAGE_SIZE + 1;
+  const endIdx = Math.min(safePage * ADMIN_PAGE_SIZE, total);
 
   const crawlCount = news.filter((n) => n.sourceType === 'crawl').length;
   const manualCount = news.filter((n) => n.sourceType === 'manual').length;

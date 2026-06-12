@@ -3,9 +3,7 @@ import { prisma } from '@/lib/db';
 import { Plus, ExternalLink } from 'lucide-react';
 import { deleteDeal } from '../actions';
 import { DeleteRowButton } from '../_components/DeleteWithConfirm';
-import { Pagination } from '../_components/Pagination';
-
-const PAGE_SIZE = 20;
+import { Pagination, ADMIN_PAGE_SIZE } from '../_components/Pagination';
 
 // 强制动态渲染，避免 Router Cache 导致翻页时统计过时
 export const dynamic = 'force-dynamic';
@@ -22,15 +20,15 @@ export default async function DealsPage({
     prisma.deal.count(),
     prisma.deal.findMany({
       orderBy: { createdAt: 'desc' },
-      skip: (page - 1) * PAGE_SIZE,
-      take: PAGE_SIZE,
+      skip: (page - 1) * ADMIN_PAGE_SIZE,
+      take: ADMIN_PAGE_SIZE,
     }),
   ]);
 
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(total / ADMIN_PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
-  const startIdx = total === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
-  const endIdx = Math.min(safePage * PAGE_SIZE, total);
+  const startIdx = total === 0 ? 0 : (safePage - 1) * ADMIN_PAGE_SIZE + 1;
+  const endIdx = Math.min(safePage * ADMIN_PAGE_SIZE, total);
 
   return (
     <div>
