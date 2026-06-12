@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { Header, Footer } from '@/components/layout';
+import { Breadcrumb } from '@/components/Breadcrumb';
 import { ArrowLeft, Clock, ExternalLink, FileText } from 'lucide-react';
 import { prisma } from '@/lib/db';
 
@@ -101,7 +102,7 @@ export default async function NewsDetailPage({
     minute: '2-digit',
   });
 
-  // JSON-LD: NewsArticle + BreadcrumbList
+  // JSON-LD: NewsArticle
   const newsArticleJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'NewsArticle',
@@ -121,40 +122,25 @@ export default async function NewsDetailPage({
     inLanguage: 'zh-CN',
   };
 
-  const breadcrumbJsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      { '@type': 'ListItem', position: 1, name: '首页', item: SITE_URL },
-      { '@type': 'ListItem', position: 2, name: '行业资讯', item: `${SITE_URL}/news` },
-      { '@type': 'ListItem', position: 3, name: item.title, item: `${SITE_URL}/news/${item.id}` },
-    ],
-  };
-
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1 max-w-3xl mx-auto px-4 sm:px-6 py-10 w-full">
-        {/* JSON-LD 结构化数据 */}
+        {/* JSON-LD: NewsArticle */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(newsArticleJsonLd) }}
         />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
-        />
 
-        {/* 面包屑（视觉） */}
-        <nav aria-label="Breadcrumb" className="text-xs text-slate-500 mb-4">
-          <Link href="/" className="hover:text-brand-600">首页</Link>
-          <span className="mx-2">/</span>
-          <Link href="/news" className="hover:text-brand-600">行业资讯</Link>
-          <span className="mx-2">/</span>
-          <span className="text-slate-700 line-clamp-1 inline-block max-w-[200px] align-bottom">
-            {item.title}
-          </span>
-        </nav>
+        {/* 面包屑（视觉 + BreadcrumbList JSON-LD 一体化） */}
+        <Breadcrumb
+          truncateLast
+          items={[
+            { name: '首页', href: '/' },
+            { name: '行业资讯', href: '/news' },
+            { name: item.title },
+          ]}
+        />
 
         {/* 返回按钮 */}
         <Link

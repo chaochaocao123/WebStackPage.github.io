@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { Header, Footer } from '@/components/layout';
+import { Breadcrumb } from '@/components/Breadcrumb';
 import { ToolCard } from '@/components/tool-card';
 import { Search as SearchIcon, Newspaper, Wrench, FileText, Tag, Clock, AlertCircle, ArrowRight } from 'lucide-react';
 import { searchAll, highlightParts, findSnippet, type SearchTab } from '@/lib/data/search';
@@ -81,33 +82,19 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const tab = normalizeTab(searchParams.tab);
   const results = await searchAll(rawQ);
 
-  // JSON-LD: BreadcrumbList
-  const breadcrumbJsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      {
-        '@type': 'ListItem',
-        position: 1,
-        name: '首页',
-        item: SITE_URL,
-      },
-      {
-        '@type': 'ListItem',
-        position: 2,
-        name: '搜索结果',
-        item: `${SITE_URL}/search${rawQ ? `?q=${encodeURIComponent(rawQ)}` : ''}`,
-      },
-    ],
-  };
-
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 py-10 w-full">
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+        {/* 面包屑（视觉 + BreadcrumbList JSON-LD 一体化） */}
+        <Breadcrumb
+          items={[
+            { name: '首页', href: '/' },
+            {
+              name: rawQ ? `搜索「${rawQ}」` : '搜索结果',
+              href: `/search${rawQ ? `?q=${encodeURIComponent(rawQ)}` : ''}`,
+            },
+          ]}
         />
 
         {/* 页面头 */}
