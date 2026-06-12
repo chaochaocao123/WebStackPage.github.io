@@ -52,28 +52,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
-  // 动态：Tools（DB 里的工具）
-  const tools = await prisma.tool.findMany({
-    select: { id: true, name: true, updatedAt: true },
-  });
-  const toolRoutes: MetadataRoute.Sitemap = tools.map((t) => ({
-    url: `${SITE_URL}/tools/${encodeURIComponent(t.name)}`,
-    lastModified: t.updatedAt,
-    changeFrequency: 'weekly',
-    priority: 0.6,
-  }));
+  // 注意：暂不为 Tool / Deal 生成详情页 URL
+  // 原因：app/tools/[slug] 和 app/deals/[id] 详情页尚未实现，列了会全部 404 影响 SEO 权重
+  // 计划：v8 加 tool 详情页、v9 加 deal 详情页后回来启用
+  // const tools = await prisma.tool.findMany({ ... });
+  // const toolRoutes: MetadataRoute.Sitemap = tools.map(...);
+  // const deals = await prisma.deal.findMany({ ... });
+  // const dealRoutes: MetadataRoute.Sitemap = deals.map(...);
 
-  // 动态：Deals（虽然公开页卡片外跳，但保留索引方便以后建内部详情）
-  const deals = await prisma.deal.findMany({
-    select: { id: true, updatedAt: true, endDate: true },
-    orderBy: { endDate: 'desc' },
-  });
-  const dealRoutes: MetadataRoute.Sitemap = deals.map((d) => ({
-    url: `${SITE_URL}/deals/${d.id}`,
-    lastModified: d.updatedAt,
-    changeFrequency: 'daily',
-    priority: 0.5,
-  }));
-
-  return [...staticRoutes, ...newsRoutes, ...articleRoutes, ...toolRoutes, ...dealRoutes];
+  return [...staticRoutes, ...newsRoutes, ...articleRoutes];
 }
