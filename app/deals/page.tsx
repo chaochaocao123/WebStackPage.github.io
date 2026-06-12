@@ -75,22 +75,19 @@ function DealCard({ deal }: { deal: DealItem & { tool?: typeof TOOLS[number] | u
         </div>
       </div>
       <div className="flex items-start gap-4">
-        <div className="w-14 h-14 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center flex-shrink-0">
-          {deal.brandLogo ? (
+        {deal.tool ? (
+          <div className="w-14 h-14 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center flex-shrink-0">
             <img
-              src={deal.brandLogo}
+              src={`https://www.google.com/s2/favicons?sz=64&domain=${new URL(deal.tool.url).hostname}`}
               alt={deal.brand}
               className="w-10 h-10 object-contain"
-              onError={(e) => {
-                const t = e.target as HTMLImageElement;
-                t.style.display = 'none';
-                if (t.parentElement) t.parentElement.innerHTML = `<span class="text-xl font-bold text-brand-600">${deal.brand[0]}</span>`;
-              }}
             />
-          ) : (
-            <span className="text-xl font-bold text-brand-600">{deal.brand[0]}</span>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div className="w-14 h-14 rounded-lg bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center text-white text-xl font-bold flex-shrink-0">
+            {deal.brand[0]}
+          </div>
+        )}
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-slate-900 group-hover:text-brand-600 transition">{deal.title}</h3>
           <div className="text-sm text-slate-500 mt-1">{deal.brand}</div>
