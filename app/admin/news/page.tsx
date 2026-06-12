@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/db';
-import { Plus, ExternalLink, Pin } from 'lucide-react';
+import { Plus, ExternalLink, Pin, ChevronLeft, ChevronRight } from 'lucide-react';
 import { deleteNews, togglePinNews } from '../actions';
 import { DeleteRowButton } from '../_components/DeleteWithConfirm';
 
@@ -12,14 +12,41 @@ const SOURCE_LABEL: Record<string, string> = {
   cifnews: '雨果网',
 };
 
-export default async function NewsPage() {
-  const news = await prisma.news.findMany({
-    orderBy: [{ pinned: 'desc' }, { publishedAt: 'desc' }],
-    take: 200,
-  });
+const PAGE_SIZE = 20;
+
+// 强制动态渲染，避免 Router Cache 导致翻页时统计过时
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+export default async function NewsPage({
+  searchParams,
+}: {
+  searchParams: { page?: string };
+}) {
+  const page = Math.max(1, Number(searchParams.page) || 1);
+
+  const [total, news] = await Promise.all([
+    prisma.news.count(),
+    prisma.news.findMany({
+      orderBy: [{ pinned: 'desc' }, { publishedAt: 'desc' }],
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+    }),
+  ]);
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const startIdx = total === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
+  const endIdx = Math.min(safePage * PAGE_SIZE, total);
 
   const crawlCount = news.filter((n) => n.sourceType === 'crawl').length;
   const manualCount = news.filter((n) => n.sourceType === 'manual').length;
+
+  // 当前页前后 2 范围的页码列表
+  const pageNumbers: number[] = [];
+  for (let i = Math.max(1, safePage - 2); i <= Math.min(totalPages, safePage + 2); i++) {
+    pageNumbers.push(i);
+  }
 
   return (
     <div>
@@ -27,7 +54,7 @@ export default async function NewsPage() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900">资讯管理</h1>
           <p className="text-sm text-slate-500 mt-1">
-            共 {news.length} 条 · 手动 {manualCount} · 抓取 {crawlCount}
+            共 {total} 条 · 本页 {startIdx}-{endIdx} · 手动 {manualCount} · 抓取 {crawlCount}
           </p>
         </div>
         <Link
@@ -129,6 +156,89 @@ export default async function NewsPage() {
           </tbody>
         </table>
       </div>
+
+      {/* 分页 */}
+      {totalPages > 1 && (
+        <div className="mt-4 flex items-center justify-between flex-wrap gap-2">
+          <div className="text-sm text-slate-500">
+            第 {startIdx}-{endIdx} 条 / 共 {total} 条 · 第 {safePage} / {totalPages} 页
+          </div>
+          <div className="flex items-center gap-1">
+            {/* 上一页 */}
+            {safePage > 1 ? (
+              <Link
+                href={`/admin/news?page=${safePage - 1}`}
+                className="px-2.5 py-1.5 border border-slate-200 rounded text-sm hover:bg-slate-100 flex items-center gap-1"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                <span>上一页</span>
+              </Link>
+            ) : (
+              <span className="px-2.5 py-1.5 border border-slate-200 rounded text-sm text-slate-300 flex items-center gap-1 cursor-not-allowed">
+                <ChevronLeft className="w-4 h-4" />
+                <span>上一页</span>
+              </span>
+            )}
+
+            {/* 首页 + 省略号 */}
+            {safePage > 3 && (
+              <>
+                <Link
+                  href="/admin/news?page=1"
+                  className="px-3 py-1.5 border border-slate-200 rounded text-sm hover:bg-slate-100"
+                >
+                  1
+                </Link>
+                {safePage > 4 && <span className="px-1 text-slate-400">…</span>}
+              </>
+            )}
+
+            {/* 当前页前后 2 页 */}
+            {pageNumbers.map((p) => (
+              <Link
+                key={p}
+                href={`/admin/news?page=${p}`}
+                className={`px-3 py-1.5 rounded text-sm ${
+                  p === safePage
+                    ? 'bg-brand-600 text-white border border-brand-600'
+                    : 'border border-slate-200 hover:bg-slate-100'
+                }`}
+              >
+                {p}
+              </Link>
+            ))}
+
+            {/* 末页 + 省略号 */}
+            {safePage < totalPages - 2 && (
+              <>
+                {safePage < totalPages - 3 && <span className="px-1 text-slate-400">…</span>}
+                <Link
+                  href={`/admin/news?page=${totalPages}`}
+                  className="px-3 py-1.5 border border-slate-200 rounded text-sm hover:bg-slate-100"
+                >
+                  {totalPages}
+                </Link>
+              </>
+            )}
+
+            {/* 下一页 */}
+            {safePage < totalPages ? (
+              <Link
+                href={`/admin/news?page=${safePage + 1}`}
+                className="px-2.5 py-1.5 border border-slate-200 rounded text-sm hover:bg-slate-100 flex items-center gap-1"
+              >
+                <span>下一页</span>
+                <ChevronRight className="w-4 h-4" />
+              </Link>
+            ) : (
+              <span className="px-2.5 py-1.5 border border-slate-200 rounded text-sm text-slate-300 flex items-center gap-1 cursor-not-allowed">
+                <span>下一页</span>
+                <ChevronRight className="w-4 h-4" />
+              </span>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
