@@ -11,8 +11,11 @@ import { getRecommendedToolsByCategory } from '@/lib/seo/related-content';
 const SITE_URL = 'https://kjgjs.cn';
 const SITE_NAME = '跨境工具说';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+// v11.13 P2-13 性能：news 详情 ISR 30 分钟缓存
+// 之前 force-dynamic：每次访问都查 DB + 跑 getRecommendedToolsByCategory
+// 改 ISR 1800：admin 新建/编辑 news 时 revalidatePath('/news') 会顺带让 ISR 自然过期
+export const revalidate = 1800;
+export const dynamicParams = true;
 
 const SOURCE_LABEL: Record<string, string> = {
   manual: '跨境工具说',
