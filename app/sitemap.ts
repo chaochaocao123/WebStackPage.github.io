@@ -52,13 +52,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
-  // 注意：暂不为 Tool / Deal 生成详情页 URL
-  // 原因：app/tools/[slug] 和 app/deals/[id] 详情页尚未实现，列了会全部 404 影响 SEO 权重
-  // 计划：v8 加 tool 详情页、v9 加 deal 详情页后回来启用
-  // const tools = await prisma.tool.findMany({ ... });
-  // const toolRoutes: MetadataRoute.Sitemap = tools.map(...);
+  // 动态：Tools（v11.10 新增工具详情页：70 个工具详情，长尾 SEO 入口）
+  const tools = await prisma.tool.findMany({
+    select: { id: true, updatedAt: true },
+  });
+  const toolRoutes: MetadataRoute.Sitemap = tools.map((t) => ({
+    url: `${SITE_URL}/tools/${t.id}`,
+    lastModified: t.updatedAt,
+    changeFrequency: 'weekly',
+    priority: 0.6,
+  }));
+
+  // 注意：Deal 详情页 /deals/[id] 尚未实现，待 v11.11 启用
   // const deals = await prisma.deal.findMany({ ... });
   // const dealRoutes: MetadataRoute.Sitemap = deals.map(...);
 
-  return [...staticRoutes, ...newsRoutes, ...articleRoutes];
+  return [...staticRoutes, ...newsRoutes, ...articleRoutes, ...toolRoutes];
 }
