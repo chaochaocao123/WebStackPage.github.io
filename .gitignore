@@ -31,3 +31,9 @@ next-env.d.ts
 
 # TypeScript
 *.tsbuildinfo
+
+# 临时文件 / 备份文件
+# 抓取工具截图（mjzj/warejia 历史截图等）
+image_*.png
+# 脚本自动生成的备份 JSON
+scripts/*-backup-*.json
