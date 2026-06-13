@@ -40,7 +40,7 @@ type Props = {
 
 const SOURCE_LABEL: Record<string, string> = {
   manual: '跨境工具说',
-  mjzj: '卖家之家',
+  mjzj: '跨境资讯通',
   cifnews: '雨果网',
 };
 
@@ -147,7 +147,7 @@ export function NewsFormClient({ initialData, formAction, deleteAction, preFormC
                   className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
                 >
                   <option value="manual">跨境工具说（默认）</option>
-                  <option value="mjzj">卖家之家</option>
+                  <option value="mjzj">跨境资讯通</option>
                   <option value="cifnews">雨果网</option>
                 </select>
               </div>

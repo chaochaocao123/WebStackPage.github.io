@@ -1,13 +1,14 @@
 // Vercel Cron: 抓取行业资讯
 // 触发：每天北京时间 9:00 和 18:00（UTC 1:00 和 10:00）
 // 安全：用 Vercel 的 CRON_SECRET 验证请求
-// 数据源：卖家之家「跨境资讯通」authorId=312（mjzj.com 官方 AI Agent 公开 API，无需 token）
+// 数据源：mjzj「跨境资讯通」authorId=312（mjzj.com 官方 AI Agent 公开 API，无需 token）
 // 2026-06-12 v2: 改抓 mjzj 官方 API 替换 wearesellers RSS（feed 已不更新）
 // 2026-06-12 v3: 抓正文内嵌渲染（不外跳）— 抓 mjzj 文章页 HTML 解析 article-content
 //   - 不引入 cheerio，用轻量正则清理
 //   - 写入 News.content 字段
 //   - 已有 url 但没 content 的也会回填
 //   - 用 articlePcUrl 去重，已存在的不更新（保留人工编辑）
+// 2026-06-13 v4: 清洗入库 title（去掉"卖家之家早讯 | "等前缀），保证全站不出"卖家之家"字眼
 //   注：cheerio 仍保留在 deps 中（crawl-deals 在用）
 
 import { NextRequest, NextResponse } from 'next/server';

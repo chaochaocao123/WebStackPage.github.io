@@ -10,7 +10,7 @@ export const contentType = 'image/png';
 
 const SOURCE_LABEL: Record<string, string> = {
   manual: '跨境工具说',
-  mjzj: '卖家之家',
+  mjzj: '跨境资讯通',
   cifnews: '雨果网',
 };
 

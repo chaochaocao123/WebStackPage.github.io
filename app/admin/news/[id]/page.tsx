@@ -5,7 +5,7 @@ import { NewsFormClient } from '../_components/NewsFormClient';
 
 const SOURCE_LABEL: Record<string, string> = {
   manual: '跨境工具说',
-  mjzj: '卖家之家',
+  mjzj: '跨境资讯通',
   cifnews: '雨果网',
 };
 
@@ -77,7 +77,7 @@ export default async function EditNewsPage({
         </details>
       ) : (
         <div className="px-4 py-3 bg-slate-50 border border-dashed border-slate-200 rounded-lg text-sm text-slate-500">
-          暂无内容。正文由 Vercel Cron 自动从卖家之家抓取并内嵌到本详情页，无需外跳。
+          暂无内容。正文由 Vercel Cron 自动从 mjzj 跨境资讯通抓取并内嵌到本详情页，无需外跳。
         </div>
       )}
     </div>
