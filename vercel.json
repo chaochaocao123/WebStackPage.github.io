@@ -5,10 +5,6 @@
       "schedule": "0 1 * * *"
     },
     {
-      "path": "/api/cron/crawl-news",
-      "schedule": "0 10 * * *"
-    },
-    {
       "path": "/api/cron/crawl-deals",
       "schedule": "0 4 * * *"
     },
