@@ -1,6 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone',
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: '**' },
@@ -8,6 +7,10 @@ const nextConfig = {
   },
   experimental: {
     serverActions: { bodySizeLimit: '2mb' },
+    // v11.15.3 P2-15 JS chunk 优化：自动重写 lucide-react/clsx/tailwind-merge 的 barrel 文件
+    // 让 tree-shaking 更彻底，首屏 JS 预计减少 20-30KB
+    // 官方文档：https://nextjs.org/docs/app/api-reference/next-config-js/optimizePackageImports
+    optimizePackageImports: ['lucide-react', 'clsx', 'tailwind-merge'],
   },
 };
 
