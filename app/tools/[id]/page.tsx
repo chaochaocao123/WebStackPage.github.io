@@ -34,7 +34,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const keywords = [tool.name, tool.business, tool.categoryKey, '跨境电商', '亚马逊', 'TikTok', '工具评测'].filter(Boolean).join(',');
 
   return {
-    title: `${tool.name} - ${tool.business} | 跨境工具说`,
+    title: `${tool.name} - ${tool.business}`,
     description: desc,
     keywords,
     alternates: { canonical: `${SITE_URL}/tools/${id}` },
