@@ -31,22 +31,38 @@ function setSecurityHeaders(response: NextResponse) {
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const response = NextResponse.next();
 
+  // v11.13.1 P2-13 性能 hotfix：middleware 介入会让 Vercel 视为 dynamic（默认 no-cache），
+  // ISR 3600 配置被 middleware 覆盖。给所有公开页显式设 s-maxage，让 CDN 真的缓存。
+  // 缓存等级（与各 page.tsx 的 revalidate 对齐）：
+  // - /  首页：s-maxage=60（CDN 1 分钟）+ ISR 300 兜底
+  // - /sitemap.xml /robots.txt：s-maxage=600（CDN 10 分钟）
+  // - /tools/[id] /deals/[id] /articles/[slug] /about /contact /privacy /terms：s-maxage=3600
+  // - /news/[id]：s-maxage=1800
+  // - /news /deals /tools 列表：s-maxage=600
+  // - 其他：s-maxage=300
   if (pathname === '/') {
-    const response = NextResponse.next();
     response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=600');
-    setSecurityHeaders(response);
-    return response;
-  }
-
-  if (pathname === '/sitemap.xml' || pathname === '/robots.txt') {
-    const response = NextResponse.next();
+  } else if (pathname === '/sitemap.xml' || pathname === '/robots.txt') {
     response.headers.set('Cache-Control', 'public, s-maxage=600, stale-while-revalidate=1200');
-    setSecurityHeaders(response);
-    return response;
+  } else if (
+    pathname.startsWith('/tools/') ||
+    pathname.startsWith('/deals/') ||
+    pathname.startsWith('/articles/') ||
+    ['/about', '/contact', '/privacy', '/terms'].includes(pathname)
+  ) {
+    response.headers.set('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400');
+  } else if (pathname.startsWith('/news/')) {
+    response.headers.set('Cache-Control', 'public, s-maxage=1800, stale-while-revalidate=86400');
+  } else if (pathname === '/news' || pathname === '/deals' || pathname === '/tools') {
+    response.headers.set('Cache-Control', 'public, s-maxage=600, stale-while-revalidate=3600');
+  } else {
+    response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
   }
 
-  return NextResponse.next();
+  setSecurityHeaders(response);
+  return response;
 }
 
 export const config = {
