@@ -74,7 +74,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     : undefined;
 
   return {
-    title: `${deal.brand} - ${deal.discount || '优惠活动'} | ${deal.title}`,
+    // 让 metadata.template "%s | 跨境工具说" 自动拼后缀，不要再手动写 | 跨境工具说
+    // 避免双拼（v11.10.1 教训）
+    title: `${deal.brand} - ${deal.title}`,
     description: desc,
     keywords,
     alternates: { canonical: `${SITE_URL}/deals/${id}` },

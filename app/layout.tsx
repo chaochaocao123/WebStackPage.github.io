@@ -56,6 +56,13 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
+  // v11.10.3 站长平台验证（Google Search Console）
+  // 渲染为 <meta name="google-site-verification" content="..." />
+  // 多家平台可同时加（next.js 会自动渲染多个 meta 标签）：
+  //   verification: { google: '...', yahoo: '...', yandex: '...', other: { 'baidu-site-verification': '...' } }
+  verification: {
+    google: 'XokonAI1YD5F8nY_sxWnDczpLp0hS0Bf2j2J0C6yr7o',
+  },
 };
 
 // JSON-LD 结构化数据
