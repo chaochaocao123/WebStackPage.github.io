@@ -5,8 +5,10 @@ import type { Metadata } from 'next';
 import { Header, Footer } from '@/components/layout';
 import { Breadcrumb } from '@/components/Breadcrumb';
 import { ToolCard } from '@/components/tool-card';
-import { ArrowLeft, ExternalLink, Gift, Globe, Tag, Wrench } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Gift, Globe, HelpCircle, Newspaper, Tag, Wrench, BookOpen, Tag as TagIcon } from 'lucide-react';
 import { prisma } from '@/lib/db';
+import { generateToolFAQs, generateFAQJsonLd } from '@/lib/seo/tool-faq';
+import { getRelatedDealsByBrand, getRelatedNewsByCategory, getRelatedArticlesByCategory } from '@/lib/seo/related-content';
 
 const SITE_URL = 'https://kjgjs.cn';
 const SITE_NAME = '跨境工具说';
@@ -75,11 +77,28 @@ export default async function ToolDetailPage({ params }: PageProps) {
     take: 6,
   });
 
+  // v11.12 P1-5 FAQ：生成 4 个常见问题
+  const faqs = generateToolFAQs({
+    name: tool.name,
+    business: tool.business,
+    category: tool.categoryKey,
+    url: tool.url,
+    discount: tool.discount,
+  });
+  const faqJsonLd = generateFAQJsonLd(faqs);
+
+  // v11.12 P1-6 内链：相关资讯/文章/优惠
+  const [relatedNews, relatedArticles, relatedDeals] = await Promise.all([
+    getRelatedNewsByCategory(tool.categoryKey),
+    getRelatedArticlesByCategory(tool.categoryKey),
+    getRelatedDealsByBrand(tool.name, id),
+  ]);
+
   const hasDiscount = !!tool.discount;
   const targetUrl = tool.affiliateUrl || tool.url;
   const hasLogo = !!tool.logo;
 
-  // JSON-LD: SoftwareApplication
+  // JSON-LD: SoftwareApplication + BreadcrumbList
   const jsonLd = {
     '@context': 'https://schema.org',
     '@graph': [
@@ -135,10 +154,15 @@ export default async function ToolDetailPage({ params }: PageProps) {
           返回工具列表
         </Link>
 
-        {/* JSON-LD */}
+        {/* JSON-LD: SoftwareApplication + BreadcrumbList */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+        {/* JSON-LD: FAQPage（v11.12 P1-5） */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
         />
 
         {/* Hero 卡片 */}
@@ -283,6 +307,41 @@ export default async function ToolDetailPage({ params }: PageProps) {
           </div>
         </article>
 
+        {/* v11.12 P1-5 FAQ 常见问题 */}
+        <section className="mt-10">
+          <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+            <HelpCircle className="w-5 h-5 text-brand-600" />
+            常见问题
+          </h2>
+          <div className="bg-white border border-slate-200 rounded-2xl divide-y divide-slate-100 overflow-hidden">
+            {faqs.map((f, idx) => (
+              <details
+                key={idx}
+                className="group p-5 hover:bg-slate-50/50 transition [&_summary::-webkit-details-marker]:hidden"
+              >
+                <summary className="flex items-start gap-3 cursor-pointer list-none">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-brand-100 text-brand-700 text-xs font-bold flex items-center justify-center mt-0.5">
+                    Q
+                  </span>
+                  <span className="flex-1 font-medium text-slate-900">{f.question}</span>
+                  <span className="flex-shrink-0 w-5 h-5 text-slate-400 group-open:rotate-180 transition-transform">
+                    <svg viewBox="0 0 20 20" fill="currentColor">
+                      <path
+                        fillRule="evenodd"
+                        d="M5.23 7.21a.75.75 0 011.06.02L10 11.06l3.71-3.83a.75.75 0 111.08 1.04l-4.25 4.39a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </span>
+                </summary>
+                <div className="mt-3 ml-9 text-sm text-slate-600 leading-relaxed">
+                  {f.answer}
+                </div>
+              </details>
+            ))}
+          </div>
+        </section>
+
         {/* 同分类其他工具 */}
         {relatedTools.length > 0 && (
           <section className="mt-10">
@@ -307,6 +366,102 @@ export default async function ToolDetailPage({ params }: PageProps) {
                 />
               ))}
             </div>
+          </section>
+        )}
+
+        {/* v11.12 P1-6 内链：相关资讯 + 相关文章 + 相关优惠 */}
+        {(relatedNews.length > 0 || relatedArticles.length > 0 || relatedDeals.length > 0) && (
+          <section className="mt-10 grid lg:grid-cols-3 gap-6">
+            {/* 相关资讯 */}
+            {relatedNews.length > 0 && (
+              <div>
+                <h2 className="text-base font-bold text-slate-900 mb-3 flex items-center gap-2">
+                  <Newspaper className="w-4 h-4 text-brand-600" />
+                  相关资讯
+                </h2>
+                <ul className="space-y-2.5">
+                  {relatedNews.slice(0, 5).map((n) => (
+                    <li key={n.id}>
+                      <Link
+                        href={`/news/${n.id}`}
+                        className="block group p-3 bg-white border border-slate-200 rounded-lg hover:border-brand-300 hover:shadow-sm transition"
+                      >
+                        <div className="text-sm font-medium text-slate-900 group-hover:text-brand-600 line-clamp-2 leading-snug">
+                          {n.title}
+                        </div>
+                        {n.category && (
+                          <div className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                            <TagIcon className="w-3 h-3" />
+                            {n.category}
+                          </div>
+                        )}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* 相关文章 */}
+            {relatedArticles.length > 0 && (
+              <div>
+                <h2 className="text-base font-bold text-slate-900 mb-3 flex items-center gap-2">
+                  <BookOpen className="w-4 h-4 text-brand-600" />
+                  相关文章
+                </h2>
+                <ul className="space-y-2.5">
+                  {relatedArticles.slice(0, 5).map((a) => (
+                    <li key={a.id}>
+                      <Link
+                        href={`/articles/${a.slug}`}
+                        className="block group p-3 bg-white border border-slate-200 rounded-lg hover:border-brand-300 hover:shadow-sm transition"
+                      >
+                        <div className="text-sm font-medium text-slate-900 group-hover:text-brand-600 line-clamp-2 leading-snug">
+                          {a.title}
+                        </div>
+                        {a.category && (
+                          <div className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                            <TagIcon className="w-3 h-3" />
+                            {a.category}
+                          </div>
+                        )}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* 相关优惠 */}
+            {relatedDeals.length > 0 && (
+              <div>
+                <h2 className="text-base font-bold text-slate-900 mb-3 flex items-center gap-2">
+                  <Gift className="w-4 h-4 text-brand-600" />
+                  {tool.name} 相关优惠
+                </h2>
+                <ul className="space-y-2.5">
+                  {relatedDeals.slice(0, 4).map((d) => (
+                    <li key={d.id}>
+                      <a
+                        href={d.url}
+                        target="_blank"
+                        rel="noopener noreferrer nofollow"
+                        className="block group p-3 bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200 rounded-lg hover:border-orange-400 hover:shadow-sm transition"
+                      >
+                        <div className="text-sm font-medium text-slate-900 group-hover:text-orange-700 line-clamp-2 leading-snug">
+                          {d.title}
+                        </div>
+                        {d.discount && (
+                          <div className="text-xs text-orange-700 mt-1 font-medium">
+                            🎁 {d.discount}
+                          </div>
+                        )}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </section>
         )}
       </main>

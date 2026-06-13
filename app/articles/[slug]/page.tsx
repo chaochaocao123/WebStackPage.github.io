@@ -3,8 +3,10 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { Header, Footer } from '@/components/layout';
 import { Breadcrumb } from '@/components/Breadcrumb';
-import { ArrowLeft, Calendar, User, Tag, ExternalLink } from 'lucide-react';
+import { ToolCard } from '@/components/tool-card';
+import { ArrowLeft, Calendar, User, Tag, ExternalLink, Wrench } from 'lucide-react';
 import { prisma } from '@/lib/db';
+import { getRecommendedToolsByCategory } from '@/lib/seo/related-content';
 
 const SITE_URL = 'https://kjgjs.cn';
 const SITE_NAME = '跨境工具说';
@@ -85,6 +87,9 @@ export default async function ArticleDetailPage({
     where: { id: item.id },
     data: { viewCount: { increment: 1 } },
   }).catch(() => {});
+
+  // v11.12 P1-6 内链：推荐工具（按 category 拉 6 个）
+  const recommendedTools = await getRecommendedToolsByCategory(item.category || '');
 
   const tags: string[] = (() => {
     try { return JSON.parse(item.tags); } catch { return []; }
@@ -232,6 +237,33 @@ export default async function ArticleDetailPage({
             )}
           </div>
         </article>
+
+        {/* v11.12 P1-6 推荐工具 */}
+        {recommendedTools.length > 0 && (
+          <section className="mt-10">
+            <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+              <Wrench className="w-5 h-5 text-brand-600" />
+              推荐工具
+            </h2>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {recommendedTools.map((t) => (
+                <ToolCard
+                  key={t.id}
+                  tool={{
+                    name: t.name,
+                    url: t.url,
+                    business: t.business,
+                    category: t.categoryKey,
+                    affiliateUrl: t.affiliateUrl,
+                    discount: t.discount,
+                    logo: t.logo,
+                    featured: t.featured,
+                  }}
+                />
+              ))}
+            </div>
+          </section>
+        )}
       </main>
       <Footer />
     </div>
