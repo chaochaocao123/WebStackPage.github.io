@@ -1,10 +1,13 @@
 import { prisma } from '@/lib/db';
 
+const DEDUPE_WINDOW_MS = 5000; // 5 秒去重窗口
+
 /**
  * 站内搜索日志记录（fire-and-forget）
  *
  * 设计要点：
- * - 不记 sessionId：留 null（后续如要 UV/路径关联，再加 client-side cookie）
+ * - 5 秒去重：同一 keyword 5 秒内重搜只写 1 条（防刷新 + 防脚本连刷）
+ * - 不记 sessionId：留 null（避免隐私争议；后续如要 UV/路径关联，再加 client-side cookie）
  * - 不记 IP：避免隐私争议
  * - 不阻塞 search 结果展示
  * - 失败只 console.error，不抛出（搜索是核心体验，监控是次要的）
@@ -19,6 +22,14 @@ export async function logSearch(opts: {
   if (keyword.length < 2) return;
 
   try {
+    // 5 秒去重：同一 keyword 在 DEDUPE_WINDOW_MS 内已有记录则跳过
+    const since = new Date(Date.now() - DEDUPE_WINDOW_MS);
+    const recent = await prisma.searchLog.findFirst({
+      where: { keyword, createdAt: { gte: since } },
+      select: { id: true },
+    });
+    if (recent) return;
+
     await prisma.searchLog.create({
       data: {
         keyword,
