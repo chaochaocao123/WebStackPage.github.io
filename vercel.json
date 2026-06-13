@@ -15,6 +15,10 @@
     {
       "path": "/api/cron/daily-report",
       "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/cron/refresh-logos",
+      "schedule": "0 16 * * 0"
     }
   ]
 }
