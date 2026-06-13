@@ -63,9 +63,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }));
 
-  // 注意：Deal 详情页 /deals/[id] 尚未实现，待 v11.11 启用
-  // const deals = await prisma.deal.findMany({ ... });
-  // const dealRoutes: MetadataRoute.Sitemap = deals.map(...);
+  // 动态：Deals（v11.10.2 新增优惠详情页：联盟营销转化页 + 限时优惠长尾）
+  // 排除已过期的 deal（endDate < now）：避免收录过期优惠拖累权重
+  const deals = await prisma.deal.findMany({
+    where: {
+      OR: [
+        { endDate: null },
+        { endDate: { gte: new Date() } },
+      ],
+    },
+    select: { id: true, updatedAt: true },
+  });
+  const dealRoutes: MetadataRoute.Sitemap = deals.map((d) => ({
+    url: `${SITE_URL}/deals/${d.id}`,
+    lastModified: d.updatedAt,
+    changeFrequency: 'daily',
+    priority: 0.7,
+  }));
 
-  return [...staticRoutes, ...newsRoutes, ...articleRoutes, ...toolRoutes];
+  return [...staticRoutes, ...newsRoutes, ...articleRoutes, ...toolRoutes, ...dealRoutes];
 }
