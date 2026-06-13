@@ -3,8 +3,9 @@ import { prisma } from '@/lib/db';
 
 const SITE_URL = 'https://kjgjs.cn';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 3600; // 1 小时重生
+// v11.15.1 修复：去掉 force-dynamic，让 ISR + middleware 兜底 s-maxage=600 生效
+// 旧写法 force-dynamic 会强制覆盖 middleware 缓存头为 max-age=0
+export const revalidate = 600; // 10 分钟重生，配合 middleware s-maxage=600
 
 /**
  * 动态 sitemap.xml
