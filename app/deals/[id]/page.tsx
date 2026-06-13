@@ -10,9 +10,17 @@ import { prisma } from '@/lib/db';
 const SITE_URL = 'https://kjgjs.cn';
 const SITE_NAME = '跨境工具说';
 
-// ISR 1 小时：与 Tool/News 详情页一致
+// v11.14 P2-13 性能：deals 详情改 SSG + ISR 3600
+// 之前 ISR 3600 + dynamicParams=true：async generateMetadata 让 Next.js 视为 dynamic
+// 改 SSG + generateStaticParams：build 时预渲染所有 deal 详情页
 export const revalidate = 3600;
 export const dynamicParams = true;
+
+/** v11.14 SSG 化：build 时预渲染所有 deal id */
+export async function generateStaticParams() {
+  const deals = await prisma.deal.findMany({ select: { id: true } });
+  return deals.map(d => ({ id: String(d.id) }));
+}
 
 interface PageProps {
   params: { id: string };

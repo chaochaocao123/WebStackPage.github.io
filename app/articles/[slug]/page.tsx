@@ -11,8 +11,18 @@ import { getRecommendedToolsByCategory } from '@/lib/seo/related-content';
 const SITE_URL = 'https://kjgjs.cn';
 const SITE_NAME = '跨境工具说';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 600; // 10 分钟 ISR
+// v11.14 P2-13 性能：articles 详情改 SSG + ISR 3600
+// 之前 force-dynamic：每次访问都查 DB。Article 表 0 条时无所谓，数据来时再优化。
+// 改 SSG + generateStaticParams：build 时预渲染所有已存在 article
+// 新增 article 走 dynamicParams=true 兜底
+export const revalidate = 3600;
+export const dynamicParams = true;
+
+/** v11.14 SSG 化：build 时预渲染所有 article slug */
+export async function generateStaticParams() {
+  const articles = await prisma.article.findMany({ select: { slug: true } });
+  return articles.map(a => ({ slug: a.slug }));
+}
 
 /** 从 Article.content 提取纯文本（用于 description） */
 function extractText(html: string, maxLen = 160): string {

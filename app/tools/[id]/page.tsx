@@ -13,9 +13,18 @@ import { getRelatedDealsByBrand, getRelatedNewsByCategory, getRelatedArticlesByC
 const SITE_URL = 'https://kjgjs.cn';
 const SITE_NAME = '跨境工具说';
 
-// ISR 1 小时：sitemap 一致；force-dynamic 避免 70 个静态页拖慢 build
+// v11.14 P2-13 性能：tools 详情改 SSG + ISR 3600
+// 之前 ISR 3600 + dynamicParams=true：每次访问 Next.js 视为 dynamic（async generateMetadata 查 DB）
+// 改 SSG + generateStaticParams：build 时预渲染 70 个 tool 详情页，CDN 真命中
+// 新增 tool 走 dynamicParams=true 兜底
 export const revalidate = 3600;
 export const dynamicParams = true;
+
+/** v11.14 SSG 化：build 时预渲染所有 tool id */
+export async function generateStaticParams() {
+  const tools = await prisma.tool.findMany({ select: { id: true } });
+  return tools.map(t => ({ id: String(t.id) }));
+}
 
 interface PageProps {
   params: { id: string };

@@ -11,11 +11,18 @@ import { getRecommendedToolsByCategory } from '@/lib/seo/related-content';
 const SITE_URL = 'https://kjgjs.cn';
 const SITE_NAME = '跨境工具说';
 
-// v11.13 P2-13 性能：news 详情 ISR 30 分钟缓存
-// 之前 force-dynamic：每次访问都查 DB + 跑 getRecommendedToolsByCategory
-// 改 ISR 1800：admin 新建/编辑 news 时 revalidatePath('/news') 会顺带让 ISR 自然过期
+// v11.14 P2-13 性能：news 详情改 SSG + ISR 1800
+// 之前 ISR 1800 + dynamicParams=true：async generateMetadata 让 Next.js 视为 dynamic
+// 改 SSG + generateStaticParams：build 时预渲染 53 个 news 详情页，CDN 真命中
+// admin 新建 news 走 dynamicParams=true 兜底
 export const revalidate = 1800;
 export const dynamicParams = true;
+
+/** v11.14 SSG 化：build 时预渲染所有 news id */
+export async function generateStaticParams() {
+  const news = await prisma.news.findMany({ select: { id: true } });
+  return news.map(n => ({ id: String(n.id) }));
+}
 
 const SOURCE_LABEL: Record<string, string> = {
   manual: '跨境工具说',
