@@ -41,32 +41,8 @@ export default async function ArticlesPage({
         </div>
         <div className="flex items-center gap-3">
           <Link
-            href="/admin/articles/import-url"
-            className="inline-flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition shadow-sm"
-            title="v11.20 主推：粘链接 → 自动抓取（需 Vercel 配置 NEWRANK_API_KEY）"
-          >
-            <Zap className="w-4 h-4" />
-            粘链接导入
-          </Link>
-          <Link
-            href="/admin/articles/import-json"
-            className="inline-flex items-center gap-2 bg-white text-brand-700 border border-brand-300 px-4 py-2 rounded-lg hover:bg-brand-50 transition"
-            title="v11.18 备胎：油猴脚本一键导出 JSON 粘到这里"
-          >
-            <FileJson className="w-4 h-4" />
-            JSON 导入
-          </Link>
-          <Link
-            href="/admin/articles/import"
-            className="inline-flex items-center gap-2 bg-white text-slate-500 border border-slate-300 px-3 py-2 rounded-lg hover:bg-slate-50 transition text-sm"
-            title="v11.16 老模式：粘贴 HTML 源码（操作复杂，不推荐）"
-          >
-            <FileCode2 className="w-3.5 h-3.5" />
-            HTML 导入
-          </Link>
-          <Link
             href="/admin/articles/new"
-            className="inline-flex items-center gap-2 bg-white text-brand-700 border border-brand-300 px-4 py-2 rounded-lg hover:bg-brand-50 transition"
+            className="inline-flex items-center gap-2 bg-brand-600 text-white px-4 py-2 rounded-lg hover:bg-brand-700 transition shadow-sm"
           >
             <Plus className="w-4 h-4" />
             写文章
