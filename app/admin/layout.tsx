@@ -16,6 +16,7 @@ import {
 
 const navItems = [
   { href: '/admin', label: '概览', icon: LayoutDashboard },
+  { href: '/admin/analytics', label: '访问分析', icon: BarChart3 },
   { href: '/admin/tools', label: '工具管理', icon: Wrench },
   { href: '/admin/categories', label: '分类管理', icon: FolderOpen },
   { href: '/admin/news', label: '资讯管理', icon: Newspaper },

@@ -1,6 +1,13 @@
-// 优化6：页面访问埋点 API
+// v11.10 优化6：页面访问埋点 API
+// v11.27 扩展：GET 支持 ?range=today|7d|30d，返回完整统计（PV/UV/Top 页面/Top 来源/时段分布/设备分布/趋势）
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import {
+  getDailyStats,
+  getHourlyDistribution,
+  getDeviceDistribution,
+  getDailyTrend,
+  beijingDateStr,
+} from '@/lib/data/page-view';
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,7 +22,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 记录页面访问
+    // 动态导入 prisma（POST 路径避免冷启动拉起分析代码）
+    const { prisma } = await import('@/lib/db');
     await prisma.pageView.create({
       data: {
         sessionId: String(sessionId),
@@ -38,64 +46,63 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// 获取统计数据的 API（供内部使用）
+// v11.27 GET：支持单日查询 ?date=YYYY-MM-DD 或范围聚合 ?range=today|7d|30d
 export async function GET(request: NextRequest) {
   try {
-    const searchParams = request.nextUrl.searchParams;
-    const date = searchParams.get('date'); // 格式: YYYY-MM-DD
+    const sp = request.nextUrl.searchParams;
+    const date = sp.get('date');
+    const range = sp.get('range') as 'today' | '7d' | '30d' | null;
 
-    if (!date) {
-      return NextResponse.json(
-        { error: '缺少 date 参数' },
-        { status: 400 }
-      );
+    // 模式 1：单日查询（兼容旧调用）
+    if (date) {
+      const daily = await getDailyStats(date);
+      const hourly = await getHourlyDistribution(date);
+      const devices = await getDeviceDistribution(date);
+      return NextResponse.json({
+        mode: 'daily',
+        ...daily,
+        hourly,
+        devices,
+      });
     }
 
-    const startOfDay = new Date(`${date}T00:00:00+08:00`);
-    const endOfDay = new Date(`${date}T23:59:59+08:00`);
-
-    // 获取当天所有记录
-    const records = await prisma.pageView.findMany({
-      where: {
-        enteredAt: {
-          gte: startOfDay,
-          lte: endOfDay,
-        },
-      },
-      orderBy: { enteredAt: 'asc' },
-    });
-
-    // 计算 UV（去重 sessionId）
-    const uniqueSessions = new Set(records.map(r => r.sessionId));
-    const uv = uniqueSessions.size;
-    const pv = records.length;
-
-    // 按页面统计
-    const pathStats = new Map<string, { pv: number; totalDuration: number; count: number }>();
-    for (const record of records) {
-      const existing = pathStats.get(record.path) || { pv: 0, totalDuration: 0, count: 0 };
-      existing.pv++;
-      if (record.duration) {
-        existing.totalDuration += record.duration;
-        existing.count++;
+    // 模式 2：范围聚合
+    if (range && ['today', '7d', '30d'].includes(range)) {
+      const days = range === 'today' ? 1 : range === '7d' ? 7 : 30;
+      if (days === 1) {
+        const today = await getDailyStats(beijingDateStr());
+        const hourly = await getHourlyDistribution(beijingDateStr());
+        const devices = await getDeviceDistribution(beijingDateStr());
+        return NextResponse.json({
+          mode: 'range',
+          range,
+          date: today.date,
+          uv: today.uv,
+          pv: today.pv,
+          avgDuration: today.avgDuration,
+          pageStats: today.pageStats,
+          referrers: today.referrers,
+          hourly,
+          devices,
+        });
       }
-      pathStats.set(record.path, existing);
+      const trend = await getDailyTrend(days);
+      const totalPv = trend.reduce((s, d) => s + d.pv, 0);
+      const totalUv = trend.reduce((s, d) => s + d.uv, 0);
+      return NextResponse.json({
+        mode: 'range',
+        range,
+        days,
+        totalPv,
+        totalUv,
+        trend,
+      });
     }
 
-    const pageStats = Array.from(pathStats.entries())
-      .map(([path, stats]) => ({
-        path,
-        pv: stats.pv,
-        avgDuration: stats.count > 0 ? Math.round(stats.totalDuration / stats.count) : 0,
-      }))
-      .sort((a, b) => b.pv - a.pv);
-
-    return NextResponse.json({
-      date,
-      uv,
-      pv,
-      pageStats,
-    });
+    return NextResponse.json(
+      { error: '缺少必要参数 date (YYYY-MM-DD) 或 range (today|7d|30d)' },
+      { status: 400 }
+    );
   } catch (error) {
     console.error('获取统计数据失败:', error);
     return NextResponse.json(

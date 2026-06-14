@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/db';
-import { Wrench, FolderOpen, FileText, Gift, ArrowRight, Zap, Newspaper } from 'lucide-react';
+import { Wrench, FolderOpen, FileText, Gift, ArrowRight, Zap, Newspaper, Eye, Users, TrendingUp } from 'lucide-react';
+import { getOverviewStats } from '@/lib/data/page-view';
 
 // 强制动态渲染，避免 Router Cache 导致统计数据过时
 export const dynamic = 'force-dynamic';
@@ -8,14 +9,23 @@ export const revalidate = 0;
 
 export default async function AdminDashboard() {
   // 获取统计数据
-  const [toolCount, toolWithDiscount, categoryCount, articleCount, dealCount, newsCount] = await Promise.all([
+  const [toolCount, toolWithDiscount, categoryCount, articleCount, dealCount, newsCount, overview] = await Promise.all([
     prisma.tool.count(),
     prisma.tool.count({ where: { discount: { not: '' } } }),
     prisma.category.count(),
     prisma.article.count(),
     prisma.deal.count(),
     prisma.news.count(),
+    // v11.27 加 PV/UV 概览
+    getOverviewStats(),
   ]);
+
+  // v11.27 访问统计卡（3 个）— 放最前，让曹总登录后台一眼看到流量
+  const trafficStats = [
+    { label: '今日 PV', value: overview.todayPv, icon: Eye, color: 'bg-brand-500', href: '/admin/analytics' },
+    { label: '今日 UV', value: overview.todayUv, icon: Users, color: 'bg-blue-500', href: '/admin/analytics' },
+    { label: '7 日 PV', value: overview.pv7d, icon: TrendingUp, color: 'bg-emerald-500', href: '/admin/analytics' },
+  ];
 
   const stats = [
     { label: '工具总数', value: toolCount, icon: Wrench, color: 'bg-brand-500' },
@@ -36,7 +46,30 @@ export default async function AdminDashboard() {
     <div>
       <h1 className="text-2xl font-bold text-slate-900 mb-6">数据概览</h1>
 
-      {/* 统计卡片 */}
+      {/* v11.27 访问流量卡（3 个）— 独立一行，蓝色系突出 */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+        {trafficStats.map((stat) => {
+          const Icon = stat.icon;
+          return (
+            <Link
+              key={stat.label}
+              href={stat.href}
+              className="bg-white rounded-xl p-5 border border-slate-200 hover:border-brand-400 hover:shadow-sm transition group"
+            >
+              <div className="flex items-center justify-between mb-3">
+                <div className={`w-10 h-10 ${stat.color} rounded-lg flex items-center justify-center`}>
+                  <Icon className="w-5 h-5 text-white" />
+                </div>
+                <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-brand-500 group-hover:translate-x-0.5 transition" />
+              </div>
+              <div className="text-2xl font-bold text-slate-900 tabular-nums">{stat.value.toLocaleString()}</div>
+              <div className="text-sm text-slate-500">{stat.label}</div>
+            </Link>
+          );
+        })}
+      </div>
+
+      {/* 内容统计卡片（5 个） */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
         {stats.map((stat) => {
           const Icon = stat.icon;
