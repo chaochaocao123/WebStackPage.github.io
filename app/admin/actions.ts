@@ -680,3 +680,105 @@ export async function togglePinNews(id: number) {
   revalidatePath('/admin/news'); revalidatePath('/admin');
   revalidatePath('/news');
 }
+
+// ============ v11.31 友情链接管理 ============
+// 曹总手动维护友链，前台 /links 展示用
+// 字段：name（必填）/ url（必填）/ description（可选）/ category（分组）/ logo（可选）/ sort（排序）/ isActive（是否启用）
+
+export async function createFriendLink(formData: FormData) {
+  const name = (formData.get('name') as string || '').trim();
+  const url = (formData.get('url') as string || '').trim();
+  const description = (formData.get('description') as string || '').trim() || null;
+  const category = (formData.get('category') as string || '默认').trim() || '默认';
+  const logo = (formData.get('logo') as string || '').trim() || null;
+  const sortRaw = formData.get('sort') as string;
+  const sort = sortRaw ? parseInt(sortRaw) : 0;
+  const isActive = formData.get('isActive') === 'on';
+
+  if (!name || !url) {
+    throw new Error('友链名和 URL 必填');
+  }
+
+  // 简单 URL 格式校验
+  try {
+    new URL(url);
+  } catch {
+    throw new Error('URL 格式不正确，请以 http:// 或 https:// 开头');
+  }
+
+  await prisma.friendLink.create({
+    data: {
+      name,
+      url,
+      description,
+      category,
+      logo,
+      sort: Number.isNaN(sort) ? 0 : sort,
+      isActive,
+    },
+  });
+
+  revalidatePath('/admin/friends');
+  revalidatePath('/admin');
+  revalidatePath('/links');
+  redirect('/admin/friends');
+}
+
+export async function updateFriendLink(id: number, formData: FormData) {
+  const name = (formData.get('name') as string || '').trim();
+  const url = (formData.get('url') as string || '').trim();
+  const description = (formData.get('description') as string || '').trim() || null;
+  const category = (formData.get('category') as string || '默认').trim() || '默认';
+  const logo = (formData.get('logo') as string || '').trim() || null;
+  const sortRaw = formData.get('sort') as string;
+  const sort = sortRaw ? parseInt(sortRaw) : 0;
+  const isActive = formData.get('isActive') === 'on';
+
+  if (!name || !url) {
+    throw new Error('友链名和 URL 必填');
+  }
+
+  try {
+    new URL(url);
+  } catch {
+    throw new Error('URL 格式不正确，请以 http:// 或 https:// 开头');
+  }
+
+  await prisma.friendLink.update({
+    where: { id },
+    data: {
+      name,
+      url,
+      description,
+      category,
+      logo,
+      sort: Number.isNaN(sort) ? 0 : sort,
+      isActive,
+    },
+  });
+
+  revalidatePath('/admin/friends');
+  revalidatePath('/admin/friends/' + id);
+  revalidatePath('/admin');
+  revalidatePath('/links');
+  redirect('/admin/friends');
+}
+
+export async function deleteFriendLink(id: number) {
+  await prisma.friendLink.delete({ where: { id } });
+  revalidatePath('/admin/friends');
+  revalidatePath('/admin');
+  revalidatePath('/links');
+}
+
+export async function toggleFriendLinkActive(id: number) {
+  const current = await prisma.friendLink.findUnique({ where: { id }, select: { isActive: true } });
+  if (!current) return;
+  await prisma.friendLink.update({
+    where: { id },
+    data: { isActive: !current.isActive },
+  });
+  revalidatePath('/admin/friends');
+  revalidatePath('/admin');
+  revalidatePath('/links');
+}

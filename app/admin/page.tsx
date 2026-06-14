@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/db';
-import { Wrench, FolderOpen, FileText, Gift, ArrowRight, Zap, Newspaper, Eye, Users, TrendingUp } from 'lucide-react';
+import { Wrench, FolderOpen, FileText, Gift, ArrowRight, Zap, Newspaper, Eye, Users, TrendingUp, Link2 } from 'lucide-react';
 import { getOverviewStats } from '@/lib/data/page-view';
 
 // 强制动态渲染，避免 Router Cache 导致统计数据过时
@@ -9,13 +9,16 @@ export const revalidate = 0;
 
 export default async function AdminDashboard() {
   // 获取统计数据
-  const [toolCount, toolWithDiscount, categoryCount, articleCount, dealCount, newsCount, overview] = await Promise.all([
+  const [toolCount, toolWithDiscount, categoryCount, articleCount, dealCount, newsCount, friendCount, friendActiveCount, overview] = await Promise.all([
     prisma.tool.count(),
     prisma.tool.count({ where: { discount: { not: '' } } }),
     prisma.category.count(),
     prisma.article.count(),
     prisma.deal.count(),
     prisma.news.count(),
+    // v11.31 友链总数 + 启用数
+    prisma.friendLink.count(),
+    prisma.friendLink.count({ where: { isActive: true } }),
     // v11.27 加 PV/UV 概览
     getOverviewStats(),
   ]);
@@ -33,6 +36,8 @@ export default async function AdminDashboard() {
     { label: '资讯数', value: newsCount, icon: Newspaper, color: 'bg-accent-500' },
     { label: '文章数', value: articleCount, icon: FileText, color: 'bg-blue-500' },
     { label: '优惠数', value: dealCount, icon: Gift, color: 'bg-green-500' },
+    // v11.31 友链数（启用/总数）
+    { label: `友链数（启用 ${friendActiveCount}/${friendCount}）`, value: friendActiveCount, icon: Link2, color: 'bg-purple-500' },
   ];
 
   const quickActions = [
@@ -69,8 +74,8 @@ export default async function AdminDashboard() {
         })}
       </div>
 
-      {/* 内容统计卡片（5 个） */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+      {/* 内容统计卡片（v11.31 5→6 个，加友链卡） */}
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
         {stats.map((stat) => {
           const Icon = stat.icon;
           return (

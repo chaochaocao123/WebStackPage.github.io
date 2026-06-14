@@ -192,7 +192,7 @@ export function Footer() {
   return (
     <footer className="bg-slate-900 text-slate-400 mt-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-8">
           <div>
             <div className="flex items-center gap-2 mb-4">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white font-bold">跨</div>
@@ -235,6 +235,14 @@ export function Footer() {
               <li className="text-brand-400">18971469839</li>
               <li><Link href="/deals" className="hover:text-white">加入优惠活动</Link></li>
               <li><Link href="/tools" className="hover:text-white">工具合作</Link></li>
+            </ul>
+          </div>
+          {/* v11.31 友情链接：参考 amz123 页脚"链接"列，单独成列方便曹总找合作友链 */}
+          <div>
+            <h4 className="font-medium text-white mb-3 text-sm">友情链接</h4>
+            <ul className="space-y-2 text-sm">
+              <li><Link href="/links" className="hover:text-white">查看所有友链</Link></li>
+              <li><Link href="/contact" className="hover:text-white">互换链接</Link></li>
             </ul>
           </div>
         </div>
