@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/db';
-import { Plus, ExternalLink } from 'lucide-react';
+import { Plus, ExternalLink, FileCode2 } from 'lucide-react';
 import { deleteArticle } from '../actions';
 import { DeleteRowButton } from '../_components/DeleteWithConfirm';
 import { Pagination, ADMIN_PAGE_SIZE } from '../_components/Pagination';
@@ -39,13 +39,22 @@ export default async function ArticlesPage({
             共 {total} 条 · 本页 {startIdx}-{endIdx}
           </p>
         </div>
-        <Link
-          href="/admin/articles/new"
-          className="inline-flex items-center gap-2 bg-brand-600 text-white px-4 py-2 rounded-lg hover:bg-brand-700 transition"
-        >
-          <Plus className="w-4 h-4" />
-          写文章
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/admin/articles/import"
+            className="inline-flex items-center gap-2 bg-white text-brand-700 border border-brand-300 px-4 py-2 rounded-lg hover:bg-brand-50 transition"
+          >
+            <FileCode2 className="w-4 h-4" />
+            从公众号导入
+          </Link>
+          <Link
+            href="/admin/articles/new"
+            className="inline-flex items-center gap-2 bg-brand-600 text-white px-4 py-2 rounded-lg hover:bg-brand-700 transition"
+          >
+            <Plus className="w-4 h-4" />
+            写文章
+          </Link>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
