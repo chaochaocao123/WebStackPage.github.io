@@ -12,7 +12,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { proxifyWechatImagesInHtml } from '@/lib/article-content-render';
 
-export const runtime = 'nodejs';
+// 用 edge runtime：Vercel Node runtime 出口在 AWS 海外，访问不到 gs-one 国内服务器
+// Edge runtime 走 Vercel 边缘网络（Cloudflare 加速），国内可达性更好
+export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 
 const GS_ONE_API = 'https://www.gs-one.cn/api/public/v1/download';
