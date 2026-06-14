@@ -106,3 +106,58 @@ body {
   background: rgb(248 250 252);
   border-radius: 0 4px 4px 0;
 }
+
+/* v11.17 公众号 HTML 排版接管（proxify 渲染兜底 + 段落结构美化） */
+.news-content p {
+  margin: 0 0 1em;
+  line-height: 1.85;
+}
+/* 公众号空行模式：<p><span leaf=""><br></span></p> → 给 0.6em 高度当段落间距 */
+.news-content p:has(> span:only-child > br:only-child) {
+  height: 0.6em;
+  margin: 0;
+}
+/* 公众号块级容器 <section> 包图/包段落 */
+.news-content section {
+  margin: 1.25em 0;
+  display: block;
+}
+.news-content section img {
+  margin: 0 auto;
+}
+/* 公众号大标题 <h1 data-pm-slice> */
+.news-content h1,
+.news-content h1[data-pm-slice] {
+  font-size: 1.5em;
+  font-weight: 700;
+  color: rgb(15 23 42);
+  margin: 1.5em 0 0.75em;
+  line-height: 1.4;
+  border-left: 4px solid rgb(37 99 235);
+  padding-left: 0.6em;
+}
+/* 列表项微调 */
+.news-content ul,
+.news-content ol {
+  margin: 1em 0 1em 0.5em;
+  padding-left: 1.5em;
+}
+.news-content li {
+  margin-bottom: 0.4em;
+  line-height: 1.75;
+}
+/* 公众号特色：<mp-style-type> 不渲染（编辑器标记） */
+.news-content mp-style-type,
+.news-content mp-common-profile,
+.news-content [data-pm-slice] {
+  display: none;
+}
+/* 加粗颜色加深 */
+.news-content strong {
+  color: rgb(15 23 42);
+  font-weight: 600;
+}
+/* 公众号小图标 span 兜底去除留白 */
+.news-content span[leaf] {
+  display: inline;
+}

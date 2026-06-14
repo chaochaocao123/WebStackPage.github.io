@@ -7,6 +7,7 @@ import { ToolCard } from '@/components/tool-card';
 import { ArrowLeft, Calendar, User, Tag, ExternalLink, Wrench } from 'lucide-react';
 import { prisma } from '@/lib/db';
 import { getRecommendedToolsByCategory } from '@/lib/seo/related-content';
+import { proxifyImgUrl, proxifyWechatImagesInHtml } from '@/lib/article-content-render';
 
 const SITE_URL = 'https://kjgjs.cn';
 const SITE_NAME = '跨境工具说';
@@ -195,23 +196,26 @@ export default async function ArticleDetailPage({
             )}
           </div>
 
-          {/* 封面图 */}
-          {item.cover && (
-            <div className="bg-slate-50">
-              <img
-                src={item.cover}
-                alt={item.title}
-                className="w-full max-h-[480px] object-contain mx-auto"
-                loading="lazy"
-              />
-            </div>
-          )}
+          {/* 封面图：渲染时再过一遍 proxify（兜底 cover 字段漏转） */}
+          {item.cover && (() => {
+            const coverProxy = proxifyImgUrl(item.cover);
+            return (
+              <div className="bg-slate-50">
+                <img
+                  src={coverProxy || item.cover}
+                  alt={item.title}
+                  className="w-full max-h-[480px] object-contain mx-auto"
+                  loading="lazy"
+                />
+              </div>
+            );
+          })()}
 
-          {/* 正文 */}
+          {/* 正文：渲染时再过一遍 proxify（兜底 parser 漏转的 mmbiz 图） */}
           <div className="p-6 sm:p-8">
             <div
               className="news-content prose prose-slate max-w-none"
-              dangerouslySetInnerHTML={{ __html: item.content || '' }}
+              dangerouslySetInnerHTML={{ __html: proxifyWechatImagesInHtml(item.content || '') }}
             />
 
             {/* 标签 */}
