@@ -15,6 +15,7 @@ import {
   FileText,
   Link2,
   Image as ImageIcon,
+  Send,
 } from 'lucide-react';
 
 const SITE_URL = 'https://kjgjs.cn';
@@ -87,10 +88,25 @@ type Props = {
   /** 编辑模式才传 */
   deleteAction?: (formData: FormData) => Promise<void>;
   /** v11.21 编辑模式才传：百度主动推送 action */
-  pushToBaiduAction?: (articleId: number) => Promise<{ ok: boolean; message: string; pushedAt?: string; detail?: string }>;
+  pushToBaiduAction?: (articleId: number) => Promise<{
+    ok: boolean;
+    message: string;
+    pushedAt?: string;
+    detail?: string;
+    baiduRemain?: number;
+    remainingToday?: number;
+  }>;
+  /** v11.28 百度推送 quota 初始值（编辑页进入时由 server 拉一次） */
+  baiduQuotaInitial?: {
+    used: number;
+    limit: number;
+    remaining: number;
+    resetAt: string;
+    hasBaiduToken: boolean;
+  };
 };
 
-export function ArticleFormClient({ initialData, formAction, deleteAction, pushToBaiduAction }: Props) {
+export function ArticleFormClient({ initialData, formAction, deleteAction, pushToBaiduAction, baiduQuotaInitial }: Props) {
   const isEdit = !!initialData?.id;
 
   const [title, setTitle] = useState(initialData?.title || '');
@@ -111,7 +127,16 @@ export function ArticleFormClient({ initialData, formAction, deleteAction, pushT
   // 百度推送状态
   const [baiduPushedAt, setBaiduPushedAt] = useState<string | null>(initialData?.baiduPushedAt || null);
   const [pushPending, startPushTransition] = useTransition();
-  const [pushResult, setPushResult] = useState<{ ok: boolean; message: string; detail?: string } | null>(null);
+  const [pushResult, setPushResult] = useState<{
+    ok: boolean;
+    message: string;
+    detail?: string;
+    baiduRemain?: number;
+    remainingToday?: number;
+  } | null>(null);
+  // v11.28 百度 quota 状态
+  const [baiduQuota, setBaiduQuota] = useState(baiduQuotaInitial);
+  const [quotaTick, setQuotaTick] = useState(0);  // 距重置倒计时刷新用
 
   // 标题变化时，自动更新 slug（如果 slugAuto 开启）
   useEffect(() => {
@@ -134,6 +159,63 @@ export function ArticleFormClient({ initialData, formAction, deleteAction, pushT
       if (firstTag) setFocusKeyword(firstTag);
     }
   }, [tags, focusKeyword]);
+
+  // v11.28 百度 quota：每 30 秒刷新一次 + 每分钟刷倒计时
+  useEffect(() => {
+    if (!isEdit) return;
+    let cancelled = false;
+    const fetchQuota = async () => {
+      try {
+        const res = await fetch('/api/baidu/quota', { cache: 'no-store' });
+        if (res.ok && !cancelled) {
+          const data = await res.json();
+          setBaiduQuota(data);
+        }
+      } catch { /* 静默失败，不打扰用户 */ }
+    };
+    fetchQuota();
+    const id = setInterval(fetchQuota, 30000);
+    return () => { cancelled = true; clearInterval(id); };
+  }, [isEdit, pushPending]); // pushPending 变化时（推送完成）立即刷新
+
+  useEffect(() => {
+    if (!baiduQuota?.resetAt) return;
+    const id = setInterval(() => setQuotaTick(t => t + 1), 60000);
+    return () => clearInterval(id);
+  }, [baiduQuota?.resetAt]);
+
+  // 距重置剩余时间（HH:MM 格式）
+  const resetIn = useMemo(() => {
+    if (!baiduQuota?.resetAt) return null;
+    const ms = new Date(baiduQuota.resetAt).getTime() - Date.now();
+    if (ms <= 0) return '即将重置';
+    const totalMin = Math.floor(ms / 60000);
+    const h = Math.floor(totalMin / 60);
+    const m = totalMin % 60;
+    return `${h}h ${m}m`;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [baiduQuota?.resetAt, quotaTick]);
+
+  // 推百度 handler（v11.28 写完整：之前 v11.21 只声明了 state 但忘了渲染按钮）
+  const handlePushToBaidu = () => {
+    if (!pushToBaiduAction || !initialData?.id) return;
+    if (isReposted) {
+      setPushResult({ ok: false, message: '转载文章不推百度（已 noindex）' });
+      return;
+    }
+    if (baiduQuota && baiduQuota.remaining <= 0) {
+      setPushResult({ ok: false, message: '今日 quota 已用完，明天 0 点重置' });
+      return;
+    }
+    startPushTransition(async () => {
+      const result = await pushToBaiduAction(initialData.id!);
+      setPushResult(result);
+      if (result.ok && result.pushedAt) {
+        setBaiduPushedAt(result.pushedAt);
+      }
+      // 推送完成后 quota 自动刷新（依赖 pushPending 变化触发的 useEffect）
+    });
+  };
 
   // SEO 计算
   const titleLen = title.length;
@@ -550,6 +632,21 @@ export function ArticleFormClient({ initialData, formAction, deleteAction, pushT
         </div>
       </div>
 
+      {/* v11.28 编辑模式才有百度主动推送（蓝色框，v11.21 规划位置） */}
+      {isEdit && pushToBaiduAction && initialData?.id && (
+        <BaiduPushSection
+          articleId={initialData.id}
+          slug={initialData.slug}
+          isReposted={isReposted}
+          baiduPushedAt={baiduPushedAt}
+          pushPending={pushPending}
+          pushResult={pushResult}
+          baiduQuota={baiduQuota}
+          resetIn={resetIn}
+          onPush={handlePushToBaidu}
+        />
+      )}
+
       {/* 编辑模式才有删除按钮（在新表单外） */}
       {isEdit && deleteAction && initialData?.id && (
         <DeleteSection
@@ -557,6 +654,167 @@ export function ArticleFormClient({ initialData, formAction, deleteAction, pushT
           id={initialData.id}
         />
       )}
+    </div>
+  );
+}
+
+/** v11.28 百度主动推送 UI（v11.21 规划的"底部蓝色框"位置） */
+function BaiduPushSection({
+  articleId,
+  slug,
+  isReposted,
+  baiduPushedAt,
+  pushPending,
+  pushResult,
+  baiduQuota,
+  resetIn,
+  onPush,
+}: {
+  articleId: number;
+  slug: string;
+  isReposted: boolean;
+  baiduPushedAt: string | null;
+  pushPending: boolean;
+  pushResult: {
+    ok: boolean;
+    message: string;
+    detail?: string;
+    baiduRemain?: number;
+    remainingToday?: number;
+  } | null;
+  baiduQuota?: {
+    used: number;
+    limit: number;
+    remaining: number;
+    resetAt: string;
+    hasBaiduToken: boolean;
+  };
+  resetIn: string | null;
+  onPush: () => void;
+}) {
+  const url = `https://kjgjs.cn/articles/${slug}`;
+  const used = baiduQuota?.used ?? 0;
+  const limit = baiduQuota?.limit ?? 10;
+  const remaining = baiduQuota?.remaining ?? limit;
+  const usedPct = limit > 0 ? Math.min(100, (used / limit) * 100) : 0;
+  const quotaColor =
+    remaining === 0 ? 'bg-red-500' :
+    remaining <= 3 ? 'bg-orange-500' :
+    'bg-blue-500';
+  const noToken = baiduQuota && !baiduQuota.hasBaiduToken;
+  const disabled = pushPending || isReposted || remaining <= 0 || !!noToken;
+
+  return (
+    <div className="mt-8 pt-6 border-t border-slate-200">
+      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-5">
+        <div className="flex items-start justify-between gap-4 mb-3">
+          <div className="flex items-center gap-2">
+            <Send className="w-4 h-4 text-blue-700" />
+            <h3 className="text-sm font-semibold text-blue-900">百度主动推送</h3>
+            <span className="text-xs text-blue-600">v11.28 quota 提示</span>
+          </div>
+          <a
+            href={url}
+            target="_blank"
+            rel="noreferrer"
+            className="text-xs text-blue-600 hover:underline font-mono truncate max-w-[300px]"
+            title={url}
+          >
+            {url} ↗
+          </a>
+        </div>
+
+        {/* Quota 进度条 */}
+        {baiduQuota ? (
+          <div className="mb-4 space-y-1.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-slate-600">
+                今日已推 <span className="font-mono font-semibold text-slate-900">{used}</span> / {limit} 次
+              </span>
+              <span className="text-slate-500">
+                剩余 <span className={`font-mono font-semibold ${remaining === 0 ? 'text-red-600' : 'text-blue-700'}`}>{remaining}</span> 次
+                {resetIn && remaining > 0 && (
+                  <span className="text-slate-400 ml-2">· {resetIn} 后重置</span>
+                )}
+              </span>
+            </div>
+            <div className="h-2 bg-blue-100 rounded-full overflow-hidden">
+              <div
+                className={`h-full ${quotaColor} transition-all duration-500`}
+                style={{ width: `${usedPct}%` }}
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="mb-4 text-xs text-slate-400">quota 加载中...</div>
+        )}
+
+        {/* 已推过的时间戳 */}
+        {baiduPushedAt && (
+          <div className="text-xs text-slate-600 mb-3 flex items-center gap-1.5">
+            <Check className="w-3.5 h-3.5 text-green-600" />
+            上次推送：{new Date(baiduPushedAt).toLocaleString('zh-CN', { hour12: false })}
+          </div>
+        )}
+
+        {/* 按钮 + 状态 */}
+        <div className="flex items-center gap-3 flex-wrap">
+          <button
+            type="button"
+            onClick={onPush}
+            disabled={disabled}
+            className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg transition text-sm font-medium ${
+              disabled
+                ? 'bg-slate-200 text-slate-500 cursor-not-allowed'
+                : 'bg-blue-600 text-white hover:bg-blue-700'
+            }`}
+          >
+            <Send className="w-3.5 h-3.5" />
+            {pushPending ? '推送中…' :
+             isReposted ? '转载文章不推' :
+             remaining <= 0 ? '今日 quota 已用完' :
+             noToken ? '未配置 BAIDU_PUSH_TOKEN' :
+             baiduPushedAt ? '再次推百度' : '立即推百度'}
+          </button>
+
+          {isReposted && (
+            <span className="text-xs text-orange-600">⚠️ 标记为转载，canonical 指外站，详情页已 noindex</span>
+          )}
+          {noToken && !isReposted && (
+            <span className="text-xs text-red-600">需先在 Vercel dashboard 配 BAIDU_PUSH_TOKEN 环境变量</span>
+          )}
+          {remaining <= 0 && !isReposted && !noToken && (
+            <span className="text-xs text-slate-600">明天 0 点自动重置为 {limit}/{limit}</span>
+          )}
+        </div>
+
+        {/* 推送结果反馈 */}
+        {pushResult && (
+          <div className={`mt-3 p-3 rounded-lg text-xs ${
+            pushResult.ok ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'
+          }`}>
+            <div className="font-medium">
+              {pushResult.ok ? '✓ ' : '✗ '}{pushResult.message}
+            </div>
+            {pushResult.ok && typeof pushResult.baiduRemain === 'number' && (
+              <div className="mt-1 text-green-700">
+                百度实时剩余：<span className="font-mono font-semibold">{pushResult.baiduRemain}</span> 次
+                {typeof pushResult.remainingToday === 'number' && (
+                  <span className="ml-2 text-slate-500">（本地统计剩余 {pushResult.remainingToday} 次）</span>
+                )}
+              </div>
+            )}
+            {pushResult.detail && (
+              <div className="mt-1 text-slate-600 break-all">详情：{pushResult.detail}</div>
+            )}
+          </div>
+        )}
+
+        <p className="text-xs text-slate-500 mt-3 pt-3 border-t border-blue-200">
+          💡 百度普通收录 API 配额 = {limit} 次/天，跨 UTC+8 0 点自动重置。
+          同一天重复推同一 URL 也会扣 quota，建议发布当天推一次即可。
+        </p>
+      </div>
     </div>
   );
 }

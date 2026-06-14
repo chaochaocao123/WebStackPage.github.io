@@ -145,3 +145,20 @@ model SearchLog {
   @@index([createdAt])
   @@index([noResult])
 }
+
+// v11.28 百度主动推送日志：记录每次推百度动作，用于 quota 提示
+// 百度普通收录 API 配额 = 10 次/天（v11.25 实测确认，全局配额，明天 0 点重置）
+model BaiduPushLog {
+  id         Int      @id @default(autoincrement())
+  articleId  Int      // 关联 Article.id
+  articleSlug String  // 冗余存 slug（文章可能删，但日志保留）
+  url        String   // 推百度的完整 URL
+  success    Boolean  // 百度是否接受
+  baiduRemain Int?    // 百度返回的 remain（实时剩余；如失败则为 null）
+  baiduSuccess Int?   // 百度返回的 success（本次成功条数；通常 1）
+  detail     String?  // 失败原因 or 百度原始响应
+  pushedAt   DateTime @default(now())
+
+  @@index([pushedAt])
+  @@index([articleId])
+}

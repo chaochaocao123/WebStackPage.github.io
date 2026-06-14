@@ -342,6 +342,8 @@ export async function pushToBaiduAction(articleId: number): Promise<{
   message: string;
   pushedAt?: string;
   detail?: string;
+  baiduRemain?: number;  // 百度返回的实时剩余 quota
+  remainingToday?: number;  // 本地统计今日剩余
 }> {
   const article = await prisma.article.findUnique({
     where: { id: articleId },
@@ -387,6 +389,16 @@ export async function pushToBaiduAction(articleId: number): Promise<{
       });
     }
   } catch (e: any) {
+    // 写失败日志
+    await prisma.baiduPushLog.create({
+      data: {
+        articleId,
+        articleSlug: article.slug,
+        url,
+        success: false,
+        detail: `请求失败：${e?.message || String(e)}`,
+      },
+    });
     return {
       ok: false,
       message: '请求百度失败（Vercel 出口可能不通）',
@@ -398,34 +410,85 @@ export async function pushToBaiduAction(articleId: number): Promise<{
   let parsed: any = null;
   try { parsed = JSON.parse(text); } catch { /* 非 JSON */ }
 
+  // 计算本地今日剩余 quota（北京时区）
+  const startOfTodayBeijing = new Date();
+  startOfTodayBeijing.setUTCHours(16, 0, 0, 0);
+  if (Date.now() < startOfTodayBeijing.getTime()) {
+    startOfTodayBeijing.setUTCDate(startOfTodayBeijing.getUTCDate() - 1);
+  }
+  const usedToday = await prisma.baiduPushLog.count({
+    where: { pushedAt: { gte: startOfTodayBeijing }, success: true },
+  });
+  const remainingToday = Math.max(0, 10 - usedToday - 1); // -1 预扣本次（成功后 +1）
+
   if (parsed?.success !== undefined) {
     // 百度标准响应：{"remain":9999,"success":1,"not_same_site":[],"not_valid":[]}
     const successCount = parsed.success || 0;
+    const baiduRemain = parsed.remain;
     if (successCount > 0) {
       const pushedAt = new Date();
-      await prisma.article.update({
-        where: { id: articleId },
-        data: { baiduPushedAt: pushedAt },
-      });
+      await prisma.$transaction([
+        prisma.article.update({
+          where: { id: articleId },
+          data: { baiduPushedAt: pushedAt },
+        }),
+        prisma.baiduPushLog.create({
+          data: {
+            articleId,
+            articleSlug: article.slug,
+            url,
+            success: true,
+            baiduRemain: typeof baiduRemain === 'number' ? baiduRemain : null,
+            baiduSuccess: successCount,
+          },
+        }),
+      ]);
       revalidatePath('/admin/articles');
       revalidatePath(`/admin/articles/${articleId}`);
       return {
         ok: true,
         message: `已推送 ${successCount} 条`,
         pushedAt: pushedAt.toISOString(),
+        baiduRemain: typeof baiduRemain === 'number' ? baiduRemain : undefined,
+        remainingToday: 10 - usedToday - 1, // 这次成功后实际剩余
       };
     }
+    // success=0 写日志（不算 quota 扣减）
+    await prisma.baiduPushLog.create({
+      data: {
+        articleId,
+        articleSlug: article.slug,
+        url,
+        success: false,
+        baiduRemain: typeof baiduRemain === 'number' ? baiduRemain : null,
+        baiduSuccess: 0,
+        detail: text.slice(0, 500),
+      },
+    });
     return {
       ok: false,
       message: '百度未接受',
       detail: text.slice(0, 200),
+      baiduRemain: typeof baiduRemain === 'number' ? baiduRemain : undefined,
+      remainingToday,
     };
   }
 
+  // 非标准响应，写失败日志
+  await prisma.baiduPushLog.create({
+    data: {
+      articleId,
+      articleSlug: article.slug,
+      url,
+      success: false,
+      detail: `HTTP ${res.status}: ${text.slice(0, 500)}`,
+    },
+  });
   return {
     ok: false,
     message: `百度返回 ${res.status}`,
     detail: text.slice(0, 200),
+    remainingToday,
   };
 }
 
