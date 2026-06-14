@@ -1,7 +1,16 @@
 import type { Metadata } from 'next';
+import Script from 'next/script';
 import { Analytics } from '@/components/Analytics';
 import { QrCodeFloat } from '@/components/layout';
 import './globals.css';
+
+// v11.29 百度统计代码（曹总 2026-06-14 22:13 提供）
+// 对应百度统计后台 https://tongji.baidu.com/ 站点 kjgjs.cn
+// 站点 ID: e5cd64af6680d0dfee994511746d4eee
+// 用 next/script afterInteractive 策略，hydration 完才加载，不阻塞首屏
+// 与 v11.27 自建埋点（Analytics）双轨制：自建保数据全，百度统计补搜索词关联分析
+const BAIDU_TONGJI_ID = 'e5cd64af6680d0dfee994511746d4eee';
+const BAIDU_TONGJI_SNIPPET = `var _hmt = _hmt || []; (function() { var hm = document.createElement("script"); hm.src = "https://hm.baidu.com/hm.js?${BAIDU_TONGJI_ID}"; var s = document.getElementsByTagName("script")[0]; s.parentNode.insertBefore(hm, s); })();`;
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://kjgjs.cn'),
@@ -136,6 +145,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="min-h-screen antialiased">
         <Analytics />
+        {/* v11.29 百度统计：紧跟自建埋点之后，afterInteractive 策略不阻塞首屏 */}
+        <Script
+          id="baidu-tongji"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{ __html: BAIDU_TONGJI_SNIPPET }}
+        />
         {children}
         <QrCodeFloat />
       </body>
