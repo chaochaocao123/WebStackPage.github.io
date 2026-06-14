@@ -7,9 +7,17 @@ import './globals.css';
 // v11.29 百度统计代码（曹总 2026-06-14 22:13 提供）
 // 对应百度统计后台 https://tongji.baidu.com/ 站点 kjgjs.cn
 // 站点 ID: e5cd64af6680d0dfee994511746d4eee
-// 用 next/script beforeInteractive 策略 + <head>，SSR 阶段直接把 <script> 标签渲染到 HTML 头部
-// （afterInteractive 策略在 RSC 序列化里注册，要等客户端 hydration 后才插入，偶发被浏览器扩展拦截或 chunk 加载失败时不触发）
-// beforeInteractive 是百度统计官方推荐方式：浏览器收到 HTML 立即执行，不依赖 hydration
+// 直接用原生 <script> + dangerouslySetInnerHTML inline 渲染到 <head>：
+//   浏览器一收到 HTML 立即执行 IIFE 里的 document.createElement("script") 创建 <script src=hm.baidu.com/...> 并插入 DOM
+//   不依赖 next/script 客户端 runtime、不依赖 hydration、不依赖 chunk 加载
+// next/script afterInteractive 失败原因（曹总 22:29 反馈没看到请求）：
+//   1. RSC 序列化注册，要等完整 hydration 完才插入
+//   2. 浏览器扩展（AdBlock/uBlock/Privacy Badger）拦截 hm.baidu.com 域名
+//   3. chunk 加载失败时整个 Script 都不触发
+// next/script beforeInteractive 也失败原因：
+//   渲染成 <script>__next_s.push(...)</script>，但消费 __next_s 数组还要等客户端 runtime 启动
+//   曹总浏览器扩展可能直接拦截 hm.baidu.com 域名——原生 inline 也救不了，但 hydration 阶段不能保证一定跑完
+// 选 inline 方案：浏览器一收到 HTML 立即执行，IIFE 里 document.createElement 创建新 <script> 标签的请求一定会发
 // 与 v11.27 自建埋点（Analytics）双轨制：自建保数据全，百度统计补搜索词关联分析
 const BAIDU_TONGJI_ID = 'e5cd64af6680d0dfee994511746d4eee';
 const BAIDU_TONGJI_SNIPPET = `var _hmt = _hmt || []; (function() { var hm = document.createElement("script"); hm.src = "https://hm.baidu.com/hm.js?${BAIDU_TONGJI_ID}"; var s = document.getElementsByTagName("script")[0]; s.parentNode.insertBefore(hm, s); })();`;
@@ -144,12 +152,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-        {/* v11.29 百度统计：用 beforeInteractive + <head>，SSR 阶段就把 <script> 标签渲染到 HTML 头部
-            （afterInteractive 策略在 RSC 序列化里注册，要等客户端 hydration 后才插入，偶发被浏览器扩展拦截或 chunk 加载失败时不触发）
-            beforeInteractive 是百度统计官方推荐方式：浏览器收到 HTML 立即执行，不依赖 hydration */}
-        <Script
-          id="baidu-tongji"
-          strategy="beforeInteractive"
+        {/* v11.29 百度统计：原生 <script> + dangerouslySetInnerHTML 直接 inline 渲染
+            浏览器收到 HTML 立即执行 IIFE，发起对 hm.baidu.com 的请求
+            不依赖 next/script runtime、不依赖 hydration、不依赖任何 chunk 加载 */}
+        <script
           dangerouslySetInnerHTML={{ __html: BAIDU_TONGJI_SNIPPET }}
         />
       </head>
