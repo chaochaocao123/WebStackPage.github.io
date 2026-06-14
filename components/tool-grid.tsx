@@ -181,9 +181,12 @@ function ToolGridInner({ tools, categories }: ToolGridProps) {
         )}
       </div>
 
-      {/* 分类 Tab */}
-      <div className="mb-6 overflow-x-auto scrollbar-hide">
-        <div className="flex gap-2 pb-2 min-w-max">
+      {/* 分类 Tab — v11.30 改 flex-wrap 多行展示
+          原版 overflow-x-auto + min-w-max 强制横滚，18 个分类挤一行，
+          后面 7-8 个被截断曹总根本看不到。
+          改 flex-wrap 后所有分类都直接显示 + 自动换行，无需横向滚动。 */}
+      <div className="mb-6">
+        <div className="flex flex-wrap gap-2">
           {categories.map(cat => (
             <button
               key={cat.key}
