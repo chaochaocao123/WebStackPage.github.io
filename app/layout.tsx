@@ -7,7 +7,9 @@ import './globals.css';
 // v11.29 百度统计代码（曹总 2026-06-14 22:13 提供）
 // 对应百度统计后台 https://tongji.baidu.com/ 站点 kjgjs.cn
 // 站点 ID: e5cd64af6680d0dfee994511746d4eee
-// 用 next/script afterInteractive 策略，hydration 完才加载，不阻塞首屏
+// 用 next/script beforeInteractive 策略 + <head>，SSR 阶段直接把 <script> 标签渲染到 HTML 头部
+// （afterInteractive 策略在 RSC 序列化里注册，要等客户端 hydration 后才插入，偶发被浏览器扩展拦截或 chunk 加载失败时不触发）
+// beforeInteractive 是百度统计官方推荐方式：浏览器收到 HTML 立即执行，不依赖 hydration
 // 与 v11.27 自建埋点（Analytics）双轨制：自建保数据全，百度统计补搜索词关联分析
 const BAIDU_TONGJI_ID = 'e5cd64af6680d0dfee994511746d4eee';
 const BAIDU_TONGJI_SNIPPET = `var _hmt = _hmt || []; (function() { var hm = document.createElement("script"); hm.src = "https://hm.baidu.com/hm.js?${BAIDU_TONGJI_ID}"; var s = document.getElementsByTagName("script")[0]; s.parentNode.insertBefore(hm, s); })();`;
@@ -142,15 +144,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
+        {/* v11.29 百度统计：用 beforeInteractive + <head>，SSR 阶段就把 <script> 标签渲染到 HTML 头部
+            （afterInteractive 策略在 RSC 序列化里注册，要等客户端 hydration 后才插入，偶发被浏览器扩展拦截或 chunk 加载失败时不触发）
+            beforeInteractive 是百度统计官方推荐方式：浏览器收到 HTML 立即执行，不依赖 hydration */}
+        <Script
+          id="baidu-tongji"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{ __html: BAIDU_TONGJI_SNIPPET }}
+        />
       </head>
       <body className="min-h-screen antialiased">
         <Analytics />
-        {/* v11.29 百度统计：紧跟自建埋点之后，afterInteractive 策略不阻塞首屏 */}
-        <Script
-          id="baidu-tongji"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{ __html: BAIDU_TONGJI_SNIPPET }}
-        />
         {children}
         <QrCodeFloat />
       </body>
