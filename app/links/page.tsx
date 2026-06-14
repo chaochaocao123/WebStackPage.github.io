@@ -35,7 +35,7 @@ export default async function LinksPage() {
           <div className="text-sm text-brand-800">
             <span className="font-medium">📢 互换友链合作：</span>
             欢迎与跨境电商导航、工具、资讯、ERP、物流等优质站点互换链接。
-            联系微信：<span className="font-mono font-medium">kjgjs2026</span>（备注：友情链接）
+            联系微信：<span className="font-mono font-medium">18971469839</span>（备注：友情链接）
           </div>
         </div>
 
