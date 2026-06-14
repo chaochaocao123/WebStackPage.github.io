@@ -6,7 +6,8 @@ import { importWechatJson, type ImportJsonResult } from './actions';
 import { JsonImportForm } from './_components/JsonImportForm';
 import { ScriptCopyBlock } from './_components/ScriptCopyBlock';
 
-// 强制动态：表单可能报错
+// 强制 Node.js runtime（必须用 node:fs 读油猴脚本）
+export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 // 读油猴脚本原文（点复制按钮时用）
