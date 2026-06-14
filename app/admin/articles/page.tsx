@@ -43,7 +43,7 @@ export default async function ArticlesPage({
           <Link
             href="/admin/articles/import-url"
             className="inline-flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition shadow-sm"
-            title="v11.19 主推：粘链接 → 自动抓取（最简）"
+            title="v11.20 主推：粘链接 → 自动抓取（需 Vercel 配置 NEWRANK_API_KEY）"
           >
             <Zap className="w-4 h-4" />
             粘链接导入
