@@ -102,6 +102,8 @@ export default async function ArticleDetailPage({
 }) {
   const item = await prisma.article.findUnique({ where: { slug: params.slug } });
   if (!item) notFound();
+  // v11.32 草稿保护：草稿文章前台 404（仅 admin 列表页可见）
+  if (item.status === 'draft') notFound();
 
   // v11.21 SEO 分批管理（主函数也要用，body 转载声明要读）
   const isReposted = !!item.isReposted;

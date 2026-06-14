@@ -64,6 +64,12 @@ model Article {
   isReposted    Boolean   @default(false)
   sourceUrl     String?   // 外站原文链接（isReposted=true 时必填）
   baiduPushedAt DateTime? // 上次主动推百度时间（首发策略证据）
+
+  // v11.32 草稿状态：'draft' / 'published'（默认 'published'，保持现状不变）
+  // 详情页 / sitemap 只展示 status='published' 的；草稿可随时再编辑
+  status        String    @default("published")
+
+  @@index([status])
 }
 
 // 优惠

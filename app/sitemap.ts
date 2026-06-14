@@ -50,8 +50,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // 动态：Articles
   // v11.21 SEO：过滤 isReposted=true 的转载文章（已 noindex，不主动推百度）
+  // v11.32 草稿：过滤 status='draft' 的（草稿不公开、不进 sitemap）
   const articles = await prisma.article.findMany({
-    where: { isReposted: false },
+    where: { isReposted: false, status: 'published' },
     select: { slug: true, updatedAt: true, publishedAt: true },
     orderBy: { publishedAt: 'desc' },
   });

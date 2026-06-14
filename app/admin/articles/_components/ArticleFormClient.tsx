@@ -16,7 +16,18 @@ import {
   Link2,
   Image as ImageIcon,
   Send,
+  Eye,
+  Upload,
+  Loader2,
+  Calendar,
+  User,
+  Tag as TagLg,
+  PencilLine,
+  FileEdit,
+  ExternalLink,
 } from 'lucide-react';
+import { RichTextEditor } from '@/components/admin/RichTextEditor';
+import { proxifyImgUrl, proxifyWechatImagesInHtml } from '@/lib/article-content-render';
 
 const SITE_URL = 'https://kjgjs.cn';
 
@@ -79,12 +90,16 @@ type InitialData = {
   isReposted?: boolean;
   sourceUrl?: string | null;
   baiduPushedAt?: string | null;
+  // v11.32 草稿状态
+  status?: 'draft' | 'published' | string;
 };
 
 type Props = {
   /** 编辑模式 = article object；新建模式 = null */
   initialData: InitialData | null;
   formAction: (formData: FormData) => Promise<void>;
+  /** v11.32 草稿按钮专用 action：新建模式传 saveAsDraft，编辑已发布传 revertToDraft */
+  draftAction?: (formData: FormData) => Promise<void>;
   /** 编辑模式才传 */
   deleteAction?: (formData: FormData) => Promise<void>;
   /** v11.21 编辑模式才传：百度主动推送 action */
@@ -106,7 +121,7 @@ type Props = {
   };
 };
 
-export function ArticleFormClient({ initialData, formAction, deleteAction, pushToBaiduAction, baiduQuotaInitial }: Props) {
+export function ArticleFormClient({ initialData, formAction, draftAction, deleteAction, pushToBaiduAction, baiduQuotaInitial }: Props) {
   const isEdit = !!initialData?.id;
 
   const [title, setTitle] = useState(initialData?.title || '');
@@ -116,10 +131,18 @@ export function ArticleFormClient({ initialData, formAction, deleteAction, pushT
   const [excerptAuto, setExcerptAuto] = useState(!isEdit); // 新建：自动
   const [content, setContent] = useState(initialData?.content || '');
   const [cover, setCover] = useState(initialData?.cover || '');
+  // v11.32 封面图上传
+  const [coverUploading, setCoverUploading] = useState(false);
+  const [coverUploadError, setCoverUploadError] = useState<string | null>(null);
+  const coverFileRef = useRef<HTMLInputElement>(null);
   const [category, setCategory] = useState(initialData?.category || '');
   const [author, setAuthor] = useState(initialData?.author || '跨境工具说');
   const [tags, setTags] = useState(initialData?.tags || '');
   const [focusKeyword, setFocusKeyword] = useState('');
+  // v11.32 草稿状态：编辑模式从 initialData 读，新建模式默认 'published'
+  const [status, setStatus] = useState<'draft' | 'published'>(
+    (initialData?.status === 'draft' ? 'draft' : 'published') as 'draft' | 'published'
+  );
   // v11.21 SEO 分批管理 state
   // 默认 false = kjgjs 首发（self-canonical）；勾选 = 转载
   const [isReposted, setIsReposted] = useState(initialData?.isReposted || false);
@@ -365,25 +388,28 @@ export function ArticleFormClient({ initialData, formAction, deleteAction, pushT
               />
             </div>
 
-            {/* 内容（HTML） */}
+            {/* 内容（v11.32 富文本编辑器） */}
             <div>
               <label className="flex items-center justify-between text-sm font-medium text-slate-700 mb-1">
-                <span>正文（支持 HTML）</span>
+                <span>
+                  正文
+                  <span className="text-xs text-slate-500 font-normal ml-2">
+                    v11.32 富文本编辑（v11.31 之前是 HTML 字面量）
+                  </span>
+                </span>
                 <span className="text-xs font-normal text-slate-400">
                   纯文本 {contentLen} 字符
                 </span>
               </label>
-              <textarea
-                name="content"
-                rows={18}
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none resize-none font-mono text-sm"
-                placeholder="<h2>一、亚马逊新规要点</h2>&#10;<p>正文内容...</p>&#10;<h2>二、卖家应对方案</h2>&#10;<p>...</p>"
-              />
-              <p className="text-xs text-slate-500 mt-1">
-                支持 HTML 标签（h2/h3/p/ul/ol/li/strong/em/a/img/blockquote）
-              </p>
+              {/* 隐藏 input：保存时把富文本 HTML 字符串塞到这里（form submit 抓 value） */}
+              <input type="hidden" name="content" value={content} />
+              <div className="border border-slate-300 rounded-lg bg-white">
+                <RichTextEditor
+                  value={content}
+                  onChange={setContent}
+                  placeholder="开始写文章：可用工具栏加粗/H2/H3/列表/引用/链接/图片…"
+                />
+              </div>
             </div>
 
             {/* 分类 + 作者 */}
@@ -439,17 +465,90 @@ export function ArticleFormClient({ initialData, formAction, deleteAction, pushT
               )}
             </div>
 
-            {/* 封面图 */}
+            {/* 封面图（v11.32 支持本地上传到 Vercel Blob + 保留 URL 输入 fallback） */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">封面图 URL</label>
-              <input
-                type="url"
-                name="cover"
-                value={cover}
-                onChange={(e) => setCover(e.target.value)}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
-                placeholder="https://..."
-              />
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                封面图
+                <span className="text-xs text-slate-500 font-normal ml-2">
+                  可上传到 Vercel Blob 或直接粘 URL（公众号图床会自动走 /api/img-proxy）
+                </span>
+              </label>
+              <div className="flex items-start gap-2">
+                <input
+                  type="url"
+                  name="cover"
+                  value={cover}
+                  onChange={(e) => setCover(e.target.value)}
+                  className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                  placeholder="https://..."
+                />
+                <input
+                  ref={coverFileRef}
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,image/svg+xml"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const f = e.target.files?.[0];
+                    if (!f) return;
+                    setCoverUploading(true);
+                    setCoverUploadError(null);
+                    try {
+                      const fd = new FormData();
+                      fd.append('file', f);
+                      const res = await fetch('/api/upload', { method: 'POST', body: fd });
+                      if (res.status === 503) {
+                        setCoverUploadError('Vercel Blob 未配置，请直接粘 URL（明天去 Vercel dashboard 配 BLOB_READ_WRITE_TOKEN 后即可上传）');
+                        return;
+                      }
+                      if (!res.ok) {
+                        const err = await res.json().catch(() => ({ message: '上传失败' }));
+                        setCoverUploadError(err.message || `HTTP ${res.status}`);
+                        return;
+                      }
+                      const data = await res.json();
+                      setCover(data.url);
+                    } catch (err) {
+                      setCoverUploadError(err instanceof Error ? err.message : '网络错误');
+                    } finally {
+                      setCoverUploading(false);
+                      e.target.value = '';
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => coverFileRef.current?.click()}
+                  disabled={coverUploading}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition text-sm disabled:opacity-50 whitespace-nowrap"
+                  title="上传图片到 Vercel Blob（需先配 BLOB_READ_WRITE_TOKEN）"
+                >
+                  {coverUploading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      上传中
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4" />
+                      上传
+                    </>
+                  )}
+                </button>
+              </div>
+              {coverUploadError && (
+                <p className="text-xs text-amber-700 mt-1 bg-amber-50 border border-amber-200 rounded px-2 py-1.5">
+                  ⚠️ {coverUploadError}
+                </p>
+              )}
+              {cover && (
+                <div className="mt-2 rounded-lg overflow-hidden border border-slate-200 bg-slate-50">
+                  <img
+                    src={proxifyImgUrl(cover) || cover}
+                    alt="封面预览"
+                    className="w-full max-h-48 object-contain"
+                  />
+                </div>
+              )}
             </div>
 
             {/* v11.21 SEO 分批管理：首发 / 转载选择 */}
@@ -496,14 +595,53 @@ export function ArticleFormClient({ initialData, formAction, deleteAction, pushT
               )}
             </div>
 
-            <div className="flex gap-4 pt-4 border-t border-slate-200">
+            <div className="flex flex-wrap items-center gap-3 pt-4 border-t border-slate-200">
+              {/* 隐藏 input：用于明确提交时的 status 意图（与按钮 formAction 配合） */}
+              <input type="hidden" name="status" value="published" />
+              {/* 主按钮：发布（新建模式）/保存修改（编辑已发布）/再次发布（编辑草稿） */}
               <button
                 type="submit"
                 className="inline-flex items-center gap-1.5 px-6 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition"
               >
-                <Save className="w-4 h-4" />
-                {isEdit ? '保存修改' : '发布'}
+                <Send className="w-4 h-4" />
+                {!isEdit ? '发布' : status === 'draft' ? '发布草稿' : '保存修改'}
               </button>
+              {/* 次按钮：保存草稿（新建模式 + 编辑草稿） / 转为草稿（编辑已发布） */}
+              {draftAction && (
+                <button
+                  type="submit"
+                  formAction={draftAction}
+                  className={`inline-flex items-center gap-1.5 px-6 py-2 rounded-lg transition ${
+                    status === 'published'
+                      ? 'bg-amber-50 text-amber-700 hover:bg-amber-100'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  {status === 'published' ? (
+                    <>
+                      <PencilLine className="w-4 h-4" />
+                      转为草稿
+                    </>
+                  ) : (
+                    <>
+                      <FileEdit className="w-4 h-4" />
+                      保存草稿
+                    </>
+                  )}
+                </button>
+              )}
+              {/* 草稿状态徽标（仅编辑模式显示） */}
+              {isEdit && (
+                <span
+                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
+                    status === 'draft'
+                      ? 'bg-amber-100 text-amber-700'
+                      : 'bg-green-100 text-green-700'
+                  }`}
+                >
+                  {status === 'draft' ? '📝 草稿' : '✓ 已发布'}
+                </span>
+              )}
               <Link
                 href="/admin/articles"
                 className="inline-flex items-center gap-1.5 px-6 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition"
@@ -517,6 +655,109 @@ export function ArticleFormClient({ initialData, formAction, deleteAction, pushT
 
         {/* 右侧：SEO 实时预览（占 1/3） */}
         <div className="space-y-4">
+          {/* v11.32 详情页最终效果预览：复用 proxify 走图床代理，1:1 还原用户将看到的页面 */}
+          <div className="bg-white rounded-xl border-2 border-brand-300 p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-brand-700">
+                <Eye className="w-3.5 h-3.5" />
+                详情页最终效果预览
+                <span className="text-[10px] text-slate-500 font-normal ml-1">
+                  （v11.32 1:1 模拟）
+                </span>
+              </div>
+              {isEdit && initialData?.id && (
+                <a
+                  href={`/articles/${slug || initialData.slug}?preview=1`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 text-xs text-brand-600 hover:underline"
+                  title="新窗口打开实际详情页（未鉴权，但能看到真实渲染）"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                  新窗口打开
+                </a>
+              )}
+            </div>
+
+            <div className="space-y-2.5 text-sm">
+              {/* 分类 + 标题（h1） */}
+              {category && (
+                <span className="inline-block px-2 py-0.5 bg-brand-50 text-brand-700 rounded text-xs font-medium">
+                  {category}
+                </span>
+              )}
+              <h2 className="text-lg sm:text-xl font-bold text-slate-900 leading-tight">
+                {title || '文章标题将显示在这里'}
+              </h2>
+              {/* meta 行：作者/时间 */}
+              <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                <span className="inline-flex items-center gap-1">
+                  <User className="w-3 h-3" />
+                  {author}
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <Calendar className="w-3 h-3" />
+                  {new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' })}
+                </span>
+                {isEdit && initialData?.viewCount !== undefined && (
+                  <span className="text-xs text-slate-400">
+                    · {initialData.viewCount} 浏览
+                  </span>
+                )}
+              </div>
+              {/* 摘要 + 左侧色块 */}
+              {excerpt && (
+                <p className="text-slate-600 leading-relaxed text-sm border-l-4 border-brand-200 pl-3 bg-brand-50/30 py-2">
+                  {excerpt}
+                </p>
+              )}
+              {/* 封面图 */}
+              {cover && (
+                <div className="rounded overflow-hidden border border-slate-200 bg-slate-50">
+                  <img
+                    src={proxifyImgUrl(cover) || cover}
+                    alt="封面预览"
+                    className="w-full max-h-40 object-contain"
+                  />
+                </div>
+              )}
+              {/* 正文（真实渲染：复用 proxifyWechatImagesInHtml + prose 样式） */}
+              {content && (
+                <div className="pt-2 border-t border-slate-100">
+                  <div
+                    className="news-content prose prose-slate prose-sm max-w-none line-clamp-[20]"
+                    dangerouslySetInnerHTML={{ __html: proxifyWechatImagesInHtml(content) }}
+                  />
+                  <p className="text-xs text-slate-400 mt-2 italic">
+                    ↑ 截断显示前 ~20 行，<a
+                      href={`/articles/${slug || 'preview'}${isEdit ? `?preview=1` : ''}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-brand-600 hover:underline"
+                    >新窗口打开看完整</a>
+                  </p>
+                </div>
+              )}
+              {/* 标签 */}
+              {tags && (
+                <div className="pt-2 border-t border-slate-100 flex items-center gap-1.5 flex-wrap">
+                  <TagLg className="w-3 h-3 text-slate-400" />
+                  {tags.split(',').map((t) => t.trim()).filter(Boolean).map((t) => (
+                    <span key={t} className="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px]">
+                      {t}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {/* 空状态 */}
+              {!title && !content && (
+                <p className="text-slate-400 text-xs text-center py-6 italic">
+                  开始填写左侧表单，本卡片实时展示最终详情页效果
+                </p>
+              )}
+            </div>
+          </div>
+
           {/* Google 搜索结果模拟 */}
           <div className="bg-white rounded-xl border border-slate-200 p-5">
             <div className="flex items-center gap-1.5 text-xs text-slate-500 mb-3">

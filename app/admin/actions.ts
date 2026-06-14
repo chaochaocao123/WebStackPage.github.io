@@ -265,6 +265,8 @@ export async function createArticle(formData: FormData) {
   const author = formData.get('author') as string || '跨境工具说';
   const sourceType = formData.get('sourceType') as string || 'manual';
   const { isReposted, sourceUrl } = readRepostFields(formData);
+  // v11.32 草稿支持：默认 published，调用 saveAsDraft 时传 status=draft
+  const status = (formData.get('status') as string) === 'draft' ? 'draft' : 'published';
 
   await prisma.article.create({
     data: {
@@ -279,12 +281,22 @@ export async function createArticle(formData: FormData) {
       sourceType,
       isReposted,
       sourceUrl,
+      status,
     },
   });
 
   revalidatePath('/admin/articles'); revalidatePath('/admin');
   revalidatePath('/articles');
   redirect('/admin/articles');
+}
+
+/** v11.32 新增：保存为草稿（status=draft）—— ArticleFormClient "保存草稿" 按钮专用 */
+export async function saveAsDraft(formData: FormData) {
+  // 强制 status=draft
+  const fd = new FormData();
+  for (const [k, v] of formData.entries()) fd.set(k, v);
+  fd.set('status', 'draft');
+  return createArticle(fd);
 }
 
 export async function updateArticle(id: number, formData: FormData) {
@@ -298,6 +310,10 @@ export async function updateArticle(id: number, formData: FormData) {
   const author = formData.get('author') as string || '跨境工具说';
   const viewCount = parseInt(formData.get('viewCount') as string) || 0;
   const { isReposted, sourceUrl } = readRepostFields(formData);
+  // v11.32 草稿支持：编辑模式下不传 status 视为保持原 status（已发布=published，草稿=draft）
+  // 仅当显式传 status=draft（如"转为草稿"按钮）才修改
+  const statusRaw = formData.get('status') as string | null;
+  const statusUpdate = statusRaw === 'draft' ? 'draft' : statusRaw === 'published' ? 'published' : undefined;
 
   await prisma.article.update({
     where: { id },
@@ -313,12 +329,21 @@ export async function updateArticle(id: number, formData: FormData) {
       viewCount,
       isReposted,
       sourceUrl,
+      ...(statusUpdate ? { status: statusUpdate } : {}),
     },
   });
 
   revalidatePath('/admin/articles'); revalidatePath('/admin');
   revalidatePath('/articles');
   redirect('/admin/articles');
+}
+
+/** v11.32 新增：编辑模式把已发布文章转为草稿 */
+export async function revertToDraft(id: number, formData: FormData) {
+  const fd = new FormData();
+  for (const [k, v] of formData.entries()) fd.set(k, v);
+  fd.set('status', 'draft');
+  return updateArticle(id, fd);
 }
 
 export async function deleteArticle(id: number) {

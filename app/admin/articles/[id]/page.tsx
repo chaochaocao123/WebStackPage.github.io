@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/db';
-import { updateArticle, deleteArticle, pushToBaiduAction } from '../../actions';
+import { updateArticle, deleteArticle, pushToBaiduAction, revertToDraft } from '../../actions';
 import { ArticleFormClient } from '../_components/ArticleFormClient';
 
 export const dynamic = 'force-dynamic';
