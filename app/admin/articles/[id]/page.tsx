@@ -9,6 +9,8 @@ export default async function EditArticlePage({
   params: { id: string };
 }) {
   const id = parseInt(params.id);
+  // v11.23 修补：非数字 id（如已删的 /admin/articles/import）显式 404，避免 prisma NaN 报错
+  if (Number.isNaN(id)) notFound();
   const article = await prisma.article.findUnique({ where: { id } });
 
   if (!article) {
