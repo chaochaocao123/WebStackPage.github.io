@@ -57,6 +57,13 @@ model Article {
   viewCount   Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  // v11.21 SEO 分批管理：默认全走"kjgjs 首发"策略
+  // isReposted=true 时 → 详情页 canonical 指 sourceUrl + noindex,follow + sitemap 跳过
+  // 当前 0 存量，全部默认 false；保留字段防御未来发外站时使用
+  isReposted    Boolean   @default(false)
+  sourceUrl     String?   // 外站原文链接（isReposted=true 时必填）
+  baiduPushedAt DateTime? // 上次主动推百度时间（首发策略证据）
 }
 
 // 优惠

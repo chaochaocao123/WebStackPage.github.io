@@ -47,7 +47,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   // 动态：Articles
+  // v11.21 SEO：过滤 isReposted=true 的转载文章（已 noindex，不主动推百度）
   const articles = await prisma.article.findMany({
+    where: { isReposted: false },
     select: { slug: true, updatedAt: true, publishedAt: true },
     orderBy: { publishedAt: 'desc' },
   });

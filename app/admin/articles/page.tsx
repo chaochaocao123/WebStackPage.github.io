@@ -80,6 +80,7 @@ export default async function ArticlesPage({
             <tr className="bg-slate-50 border-b border-slate-200">
               <th className="text-left px-4 py-3 text-sm font-medium text-slate-600">标题</th>
               <th className="text-left px-4 py-3 text-sm font-medium text-slate-600">分类</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-slate-600">属性</th>
               <th className="text-left px-4 py-3 text-sm font-medium text-slate-600">浏览</th>
               <th className="text-left px-4 py-3 text-sm font-medium text-slate-600">发布时间</th>
               <th className="text-left px-4 py-3 text-sm font-medium text-slate-600">操作</th>
@@ -88,7 +89,7 @@ export default async function ArticlesPage({
           <tbody>
             {articles.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-slate-500">
+                <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
                   暂无文章，<Link href="/admin/articles/new" className="text-brand-600 hover:underline">去写一篇</Link>
                 </td>
               </tr>
@@ -107,6 +108,43 @@ export default async function ArticlesPage({
                     ) : (
                       <span className="text-slate-400 text-xs">无</span>
                     )}
+                  </td>
+                  {/* v11.21 原创/转载 + 百度推送状态 */}
+                  <td className="px-4 py-3">
+                    <div className="flex flex-col gap-1">
+                      {article.isReposted ? (
+                        <span
+                          className="inline-flex items-center px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-xs"
+                          title="转载文章：canonical 指外站、noindex、不推百度"
+                        >
+                          转载
+                        </span>
+                      ) : (
+                        <span
+                          className="inline-flex items-center px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs"
+                          title="kjgjs 首发：self-canonical、sitemap 推百度"
+                        >
+                          原创
+                        </span>
+                      )}
+                      {!article.isReposted && (
+                        article.baiduPushedAt ? (
+                          <span
+                            className="inline-flex items-center px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs"
+                            title={`已推百度：${new Date(article.baiduPushedAt).toLocaleString('zh-CN')}`}
+                          >
+                            ✓ 已推百度
+                          </span>
+                        ) : (
+                          <span
+                            className="inline-flex items-center px-2 py-0.5 bg-slate-100 text-slate-500 rounded text-xs"
+                            title="首发后请到编辑页点击'主动推百度'按钮"
+                          >
+                            未推百度
+                          </span>
+                        )
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-slate-500">{article.viewCount}</td>
                   <td className="px-4 py-3 text-slate-500 text-sm">

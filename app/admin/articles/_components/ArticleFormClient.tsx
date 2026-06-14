@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, useTransition } from 'react';
 import Link from 'next/link';
 import {
   ArrowLeft,
@@ -74,6 +74,10 @@ type InitialData = {
   author: string;
   tags: string;
   viewCount?: number;
+  // v11.21 SEO 分批管理
+  isReposted?: boolean;
+  sourceUrl?: string | null;
+  baiduPushedAt?: string | null;
 };
 
 type Props = {
@@ -82,9 +86,11 @@ type Props = {
   formAction: (formData: FormData) => Promise<void>;
   /** 编辑模式才传 */
   deleteAction?: (formData: FormData) => Promise<void>;
+  /** v11.21 编辑模式才传：百度主动推送 action */
+  pushToBaiduAction?: (articleId: number) => Promise<{ ok: boolean; message: string; pushedAt?: string; detail?: string }>;
 };
 
-export function ArticleFormClient({ initialData, formAction, deleteAction }: Props) {
+export function ArticleFormClient({ initialData, formAction, deleteAction, pushToBaiduAction }: Props) {
   const isEdit = !!initialData?.id;
 
   const [title, setTitle] = useState(initialData?.title || '');
@@ -98,6 +104,14 @@ export function ArticleFormClient({ initialData, formAction, deleteAction }: Pro
   const [author, setAuthor] = useState(initialData?.author || '跨境工具说');
   const [tags, setTags] = useState(initialData?.tags || '');
   const [focusKeyword, setFocusKeyword] = useState('');
+  // v11.21 SEO 分批管理 state
+  // 默认 false = kjgjs 首发（self-canonical）；勾选 = 转载
+  const [isReposted, setIsReposted] = useState(initialData?.isReposted || false);
+  const [sourceUrl, setSourceUrl] = useState(initialData?.sourceUrl || '');
+  // 百度推送状态
+  const [baiduPushedAt, setBaiduPushedAt] = useState<string | null>(initialData?.baiduPushedAt || null);
+  const [pushPending, startPushTransition] = useTransition();
+  const [pushResult, setPushResult] = useState<{ ok: boolean; message: string; detail?: string } | null>(null);
 
   // 标题变化时，自动更新 slug（如果 slugAuto 开启）
   useEffect(() => {
@@ -354,6 +368,50 @@ export function ArticleFormClient({ initialData, formAction, deleteAction }: Pro
                 className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
                 placeholder="https://..."
               />
+            </div>
+
+            {/* v11.21 SEO 分批管理：首发 / 转载选择 */}
+            <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-3">
+              <div className="flex items-start gap-2">
+                <input
+                  type="checkbox"
+                  id="isReposted"
+                  name="isReposted"
+                  checked={isReposted}
+                  onChange={(e) => setIsReposted(e.target.checked)}
+                  className="mt-1 w-4 h-4 text-brand-600 border-slate-300 rounded focus:ring-brand-500"
+                />
+                <div className="flex-1">
+                  <label htmlFor="isReposted" className="text-sm font-medium text-slate-700 cursor-pointer">
+                    这篇文章已在其他网站/平台发布过（标记为转载）
+                  </label>
+                  <p className="text-xs text-slate-500 mt-1">
+                    {isReposted
+                      ? '⚠️ 标记为转载后：canonical 将指向外站原文、详情页加 noindex、sitemap 跳过推百度'
+                      : '✅ 标记为 kjgjs 首发：self-canonical、sitemap 主动推百度、详情页完整索引'}
+                  </p>
+                </div>
+              </div>
+
+              {isReposted && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    <span className="text-red-500">*</span> 外站原文链接
+                  </label>
+                  <input
+                    type="url"
+                    name="sourceUrl"
+                    required
+                    value={sourceUrl}
+                    onChange={(e) => setSourceUrl(e.target.value)}
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none font-mono text-sm"
+                    placeholder="https://zhuanlan.zhihu.com/p/xxx 或 https://mp.weixin.qq.com/s/xxx"
+                  />
+                  <p className="text-xs text-slate-500 mt-1">
+                    必须填写。这是 canonical 指向的目标，也是详情页"转载声明"展示的链接。
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="flex gap-4 pt-4 border-t border-slate-200">

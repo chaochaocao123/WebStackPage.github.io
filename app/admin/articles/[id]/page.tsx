@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/db';
-import { updateArticle, deleteArticle } from '../../actions';
+import { updateArticle, deleteArticle, pushToBaiduAction } from '../../actions';
 import { ArticleFormClient } from '../_components/ArticleFormClient';
 
 export default async function EditArticlePage({
@@ -26,6 +26,10 @@ export default async function EditArticlePage({
     author: article.author,
     tags: JSON.parse(article.tags || '[]').join(', '),
     viewCount: article.viewCount,
+    // v11.21 SEO 分批管理字段
+    isReposted: article.isReposted,
+    sourceUrl: article.sourceUrl,
+    baiduPushedAt: article.baiduPushedAt?.toISOString() || null,
   };
 
   return (
@@ -33,6 +37,8 @@ export default async function EditArticlePage({
       initialData={initialData}
       formAction={updateArticle.bind(null, id)}
       deleteAction={deleteArticle.bind(null, id)}
+      // v11.21 百度主动推送（绑定 id）
+      pushToBaiduAction={pushToBaiduAction.bind(null, id)}
     />
   );
 }

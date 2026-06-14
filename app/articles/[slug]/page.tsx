@@ -4,7 +4,7 @@ import type { Metadata } from 'next';
 import { Header, Footer } from '@/components/layout';
 import { Breadcrumb } from '@/components/Breadcrumb';
 import { ToolCard } from '@/components/tool-card';
-import { ArrowLeft, Calendar, User, Tag, ExternalLink, Wrench } from 'lucide-react';
+import { ArrowLeft, Calendar, User, Tag, ExternalLink, Wrench, AlertTriangle } from 'lucide-react';
 import { prisma } from '@/lib/db';
 import { getRecommendedToolsByCategory } from '@/lib/seo/related-content';
 import { proxifyImgUrl, proxifyWechatImagesInHtml } from '@/lib/article-content-render';
@@ -56,16 +56,26 @@ export async function generateMetadata({
     try { return JSON.parse(item.tags); } catch { return []; }
   })();
 
+  // v11.21 SEO 分批管理：isReposted=true → canonical 指外站 + noindex,follow
+  // 默认（isReposted=false）= kjgjs 首发，self-canonical 完全合法
+  const isReposted = !!item.isReposted;
+  const externalUrl = (item.sourceUrl || '').trim();
+  const canonicalUrl = isReposted && externalUrl
+    ? externalUrl
+    : `${SITE_URL}/articles/${item.slug}`;
+
   return {
     title: item.title,
     description: desc,
     keywords: [item.category || '跨境电商', ...tags, '亚马逊', 'TikTok'].filter(Boolean).join(','),
     authors: [{ name: item.author }],
-    alternates: { canonical: `${SITE_URL}/articles/${item.slug}` },
+    alternates: { canonical: canonicalUrl },
+    // v11.21：转载文章不索引但允许跟踪外链（保留内链价值传递）
+    ...(isReposted && externalUrl ? { robots: { index: false, follow: true } } : {}),
     openGraph: {
       type: 'article',
       locale: 'zh_CN',
-      url: `${SITE_URL}/articles/${item.slug}`,
+      url: canonicalUrl,
       siteName: SITE_NAME,
       title: item.title,
       description: desc,
@@ -92,6 +102,10 @@ export default async function ArticleDetailPage({
 }) {
   const item = await prisma.article.findUnique({ where: { slug: params.slug } });
   if (!item) notFound();
+
+  // v11.21 SEO 分批管理（主函数也要用，body 转载声明要读）
+  const isReposted = !!item.isReposted;
+  const externalUrl = (item.sourceUrl || '').trim();
 
   // viewCount 异步 +1（不阻塞渲染）
   prisma.article.update({
@@ -251,6 +265,30 @@ export default async function ArticleDetailPage({
             )}
           </div>
         </article>
+
+        {/* v11.21 转载声明：isReposted=true + sourceUrl 有效时展示 */}
+        {isReposted && externalUrl && (
+          <div className="mt-6 bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0 text-amber-600" />
+              <div>
+                <div className="font-medium mb-1">转载声明</div>
+                <p>
+                  本文为转载文章，原文著作权归原作者所有。
+                  原文链接：
+                  <a
+                    href={externalUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-amber-700 underline hover:text-amber-900 break-all"
+                  >
+                    {externalUrl}
+                  </a>
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* v11.12 P1-6 推荐工具 */}
         {recommendedTools.length > 0 && (

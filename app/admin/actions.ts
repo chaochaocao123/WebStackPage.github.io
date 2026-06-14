@@ -241,6 +241,19 @@ export async function deleteCategory(id: number) {
 
 // ============ 文章管理 ============
 
+/** 工具函数：从 formData 安全读 isReposted / sourceUrl */
+function readRepostFields(formData: FormData): {
+  isReposted: boolean;
+  sourceUrl: string | null;
+} {
+  const isReposted = formData.get('isReposted') === 'on';
+  const raw = (formData.get('sourceUrl') as string | null)?.trim() || '';
+  return {
+    isReposted,
+    sourceUrl: isReposted ? (raw || null) : null,
+  };
+}
+
 export async function createArticle(formData: FormData) {
   const title = formData.get('title') as string;
   const slug = formData.get('slug') as string;
@@ -251,6 +264,7 @@ export async function createArticle(formData: FormData) {
   const tags = formData.get('tags') as string;
   const author = formData.get('author') as string || '跨境工具说';
   const sourceType = formData.get('sourceType') as string || 'manual';
+  const { isReposted, sourceUrl } = readRepostFields(formData);
 
   await prisma.article.create({
     data: {
@@ -263,6 +277,8 @@ export async function createArticle(formData: FormData) {
       tags: JSON.stringify(tags ? tags.split(',').map(t => t.trim()) : []),
       author,
       sourceType,
+      isReposted,
+      sourceUrl,
     },
   });
 
@@ -281,6 +297,7 @@ export async function updateArticle(id: number, formData: FormData) {
   const tags = formData.get('tags') as string;
   const author = formData.get('author') as string || '跨境工具说';
   const viewCount = parseInt(formData.get('viewCount') as string) || 0;
+  const { isReposted, sourceUrl } = readRepostFields(formData);
 
   await prisma.article.update({
     where: { id },
@@ -294,6 +311,8 @@ export async function updateArticle(id: number, formData: FormData) {
       tags: JSON.stringify(tags ? tags.split(',').map(t => t.trim()) : []),
       author,
       viewCount,
+      isReposted,
+      sourceUrl,
     },
   });
 
@@ -306,6 +325,108 @@ export async function deleteArticle(id: number) {
   await prisma.article.delete({ where: { id } });
   revalidatePath('/admin/articles'); revalidatePath('/admin');
   revalidatePath('/articles');
+}
+
+// ============ v11.21 百度主动推送（首发策略核心） ============
+
+/**
+ * 主动推送到百度站长平台普通收录 API
+ * 端点：http://data.zz.baidu.com/urls?site=kjgjs.cn&token=xxx
+ * POST body：每行一个 URL（单次最多 2000 条）
+ *
+ * Vercel 出口在 AWS 美东，国内服务（百度站长平台 data.zz.baidu.com）可能调不通
+ * 兜底：通过 LOCAL_PROXY_URL 走用户本地代理（Vercel 加环境变量即可）
+ */
+export async function pushToBaiduAction(articleId: number): Promise<{
+  ok: boolean;
+  message: string;
+  pushedAt?: string;
+  detail?: string;
+}> {
+  const article = await prisma.article.findUnique({
+    where: { id: articleId },
+    select: { slug: true, isReposted: true, sourceUrl: true },
+  });
+  if (!article) {
+    return { ok: false, message: '文章不存在' };
+  }
+  if (article.isReposted) {
+    return { ok: false, message: '转载文章不推百度（已 noindex）' };
+  }
+
+  const token = process.env.BAIDU_PUSH_TOKEN;
+  if (!token) {
+    return { ok: false, message: '未配置 BAIDU_PUSH_TOKEN（Vercel 环境变量）' };
+  }
+
+  const url = `https://kjgjs.cn/articles/${article.slug}`;
+  const apiEndpoint = `http://data.zz.baidu.com/urls?site=kjgjs.cn&token=${encodeURIComponent(token)}`;
+
+  // Vercel 出口可能在 AWS 美东，data.zz.baidu.com 国内服务拒接
+  // 优先走本地代理（曹总电脑跑 proxy.js 之类）；未配则直连
+  const proxyUrl = process.env.LOCAL_PROXY_URL; // 例如 http://127.0.0.1:9527
+  const fetcher = proxyUrl ? `${proxyUrl.replace(/\/$/, '')}/proxy?target=baidu&token=${encodeURIComponent(token)}` : null;
+
+  let res: Response;
+  try {
+    if (fetcher) {
+      // 走本地代理（用户电脑跑代理服务，转发到百度）
+      res = await fetch(fetcher, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: url,
+        signal: AbortSignal.timeout(8000),
+      });
+    } else {
+      // 直连（Vercel 出口可能不通，依赖国内 Vercel 节点或用户代理服务）
+      res = await fetch(apiEndpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: url,
+        signal: AbortSignal.timeout(8000),
+      });
+    }
+  } catch (e: any) {
+    return {
+      ok: false,
+      message: '请求百度失败（Vercel 出口可能不通）',
+      detail: e?.message || String(e),
+    };
+  }
+
+  const text = await res.text();
+  let parsed: any = null;
+  try { parsed = JSON.parse(text); } catch { /* 非 JSON */ }
+
+  if (parsed?.success !== undefined) {
+    // 百度标准响应：{"remain":9999,"success":1,"not_same_site":[],"not_valid":[]}
+    const successCount = parsed.success || 0;
+    if (successCount > 0) {
+      const pushedAt = new Date();
+      await prisma.article.update({
+        where: { id: articleId },
+        data: { baiduPushedAt: pushedAt },
+      });
+      revalidatePath('/admin/articles');
+      revalidatePath(`/admin/articles/${articleId}`);
+      return {
+        ok: true,
+        message: `已推送 ${successCount} 条`,
+        pushedAt: pushedAt.toISOString(),
+      };
+    }
+    return {
+      ok: false,
+      message: '百度未接受',
+      detail: text.slice(0, 200),
+    };
+  }
+
+  return {
+    ok: false,
+    message: `百度返回 ${res.status}`,
+    detail: text.slice(0, 200),
+  };
 }
 
 // ============ 优惠管理 ============
