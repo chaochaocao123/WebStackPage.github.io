@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/db';
-import { Plus, ExternalLink, FileCode2, FileJson } from 'lucide-react';
+import { Plus, ExternalLink, FileCode2, FileJson, Zap } from 'lucide-react';
 import { deleteArticle } from '../actions';
 import { DeleteRowButton } from '../_components/DeleteWithConfirm';
 import { Pagination, ADMIN_PAGE_SIZE } from '../_components/Pagination';
@@ -41,12 +41,20 @@ export default async function ArticlesPage({
         </div>
         <div className="flex items-center gap-3">
           <Link
+            href="/admin/articles/import-url"
+            className="inline-flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition shadow-sm"
+            title="v11.19 主推：粘链接 → 自动抓取（最简）"
+          >
+            <Zap className="w-4 h-4" />
+            粘链接导入
+          </Link>
+          <Link
             href="/admin/articles/import-json"
-            className="inline-flex items-center gap-2 bg-brand-600 text-white px-4 py-2 rounded-lg hover:bg-brand-700 transition"
-            title="油猴脚本一键导出 JSON 粘到这里"
+            className="inline-flex items-center gap-2 bg-white text-brand-700 border border-brand-300 px-4 py-2 rounded-lg hover:bg-brand-50 transition"
+            title="v11.18 备胎：油猴脚本一键导出 JSON 粘到这里"
           >
             <FileJson className="w-4 h-4" />
-            导入公众号 JSON
+            JSON 导入
           </Link>
           <Link
             href="/admin/articles/import"
