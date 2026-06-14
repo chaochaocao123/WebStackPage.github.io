@@ -60,8 +60,15 @@ export const metadata: Metadata = {
   // 渲染为 <meta name="google-site-verification" content="..." />
   // 多家平台可同时加（next.js 会自动渲染多个 meta 标签）：
   //   verification: { google: '...', yahoo: '...', yandex: '...', other: { 'baidu-site-verification': '...' } }
+  // v11.24 百度站长平台 HTML 标签验证：站点归属验证 + 解锁普通收录 API token
+  // 渲染为 <meta name="baidu-site-verification" content="codeva-KsBLJ4iHZH" />
+  // 对应百度站长平台 https://ziyuan.baidu.com/ 站点管理 → kjgjs.cn → HTML 标签验证
+  // 配完后续需要在 Vercel 配 BAIDU_PUSH_TOKEN 启用 pushToBaiduAction 主动推送
   verification: {
     google: 'XokonAI1YD5F8nY_sxWnDczpLp0hS0Bf2j2J0C6yr7o',
+    other: {
+      'baidu-site-verification': 'codeva-KsBLJ4iHZH',
+    },
   },
 };
 
