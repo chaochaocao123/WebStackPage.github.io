@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/db';
-import { Plus, ExternalLink, FileCode2 } from 'lucide-react';
+import { Plus, ExternalLink, FileCode2, FileJson } from 'lucide-react';
 import { deleteArticle } from '../actions';
 import { DeleteRowButton } from '../_components/DeleteWithConfirm';
 import { Pagination, ADMIN_PAGE_SIZE } from '../_components/Pagination';
@@ -41,15 +41,24 @@ export default async function ArticlesPage({
         </div>
         <div className="flex items-center gap-3">
           <Link
-            href="/admin/articles/import"
-            className="inline-flex items-center gap-2 bg-white text-brand-700 border border-brand-300 px-4 py-2 rounded-lg hover:bg-brand-50 transition"
+            href="/admin/articles/import-json"
+            className="inline-flex items-center gap-2 bg-brand-600 text-white px-4 py-2 rounded-lg hover:bg-brand-700 transition"
+            title="油猴脚本一键导出 JSON 粘到这里"
           >
-            <FileCode2 className="w-4 h-4" />
-            从公众号导入
+            <FileJson className="w-4 h-4" />
+            导入公众号 JSON
+          </Link>
+          <Link
+            href="/admin/articles/import"
+            className="inline-flex items-center gap-2 bg-white text-slate-500 border border-slate-300 px-3 py-2 rounded-lg hover:bg-slate-50 transition text-sm"
+            title="v11.16 老模式：粘贴 HTML 源码（操作复杂，不推荐）"
+          >
+            <FileCode2 className="w-3.5 h-3.5" />
+            HTML 导入
           </Link>
           <Link
             href="/admin/articles/new"
-            className="inline-flex items-center gap-2 bg-brand-600 text-white px-4 py-2 rounded-lg hover:bg-brand-700 transition"
+            className="inline-flex items-center gap-2 bg-white text-brand-700 border border-brand-300 px-4 py-2 rounded-lg hover:bg-brand-50 transition"
           >
             <Plus className="w-4 h-4" />
             写文章
