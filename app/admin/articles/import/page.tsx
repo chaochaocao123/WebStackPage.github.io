@@ -3,6 +3,7 @@
 import { useState, useRef, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { upload } from '@vercel/blob/client';
 import { ArrowLeft, Upload, FileText, AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react';
 
 export default function ImportWordPage() {
@@ -30,21 +31,36 @@ export default function ImportWordPage() {
       setErrorMsg('');
       setWarnings([]);
 
-      const fd = new FormData();
-      fd.append('file', selectedFile);
-
       try {
-        const res = await fetch('/api/import/word', {
-          method: 'POST',
-          body: fd,
-          // 带 Referer 满足 admin 鉴权
-          headers: {
-            'Referer': window.location.origin + '/admin/',
-          },
+        // v11.33.2 改造：先客户端直传 docx 到 Vercel Blob（绕开 Vercel Function 4.5MB body 限制）
+        // handleUploadUrl: /api/import/word/upload 负责发短期 client token
+        const blob = await upload(selectedFile.name, selectedFile, {
+          access: 'public',
+          handleUploadUrl: '/api/import/word/upload',
+          // 不在 pathname 里加前缀，保持 handleUpload 简洁
         });
 
-        const data = await res.json();
+        // 上传成功，调主 API 传 Blob URL 走解析流程
+        const res = await fetch('/api/import/word', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Referer': window.location.origin + '/admin/',
+          },
+          body: JSON.stringify({
+            blobUrl: blob.url,
+            filename: selectedFile.name,
+          }),
+        });
 
+        // 修 v11.33.1 隐藏 bug：先看 status 和 content-type，错误页不是 JSON 不会让 res.json() 抛 "Unexpected token"
+        const text = await res.text();
+        let data: any;
+        try {
+          data = JSON.parse(text);
+        } catch {
+          throw new Error(`服务器返回非 JSON (${res.status}): ${text.slice(0, 200)}`);
+        }
         if (!res.ok || !data.ok) {
           setStatus('error');
           setErrorMsg(data.message || `服务器错误 (${res.status})`);

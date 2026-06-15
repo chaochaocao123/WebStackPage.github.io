@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { put } from '@vercel/blob';
+import { put, del } from '@vercel/blob';
 import mammoth from 'mammoth';
 
 export const runtime = 'nodejs';
 
-/** 最大 10MB */
-const MAX_SIZE = 10 * 1024 * 1024;
+/** 最大 50MB（与上传端 maximumSizeInBytes 一致） */
+const MAX_SIZE = 50 * 1024 * 1024;
 
 /** 允许的 MIME 类型 */
 const ALLOWED_TYPES = [
@@ -70,45 +70,104 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // 2. 解析 FormData
-  let formData: FormData;
-  try {
-    formData = await request.formData();
-  } catch {
-    return NextResponse.json(
-      { ok: false, error: 'INVALID_FORM_DATA', message: '请用 multipart/form-data 上传' },
-      { status: 400 }
-    );
-  }
+  // 2. v11.33.2 解析请求体：支持两种模式
+  //   模式 A：JSON { blobUrl, filename }（v11.33.2+，客户端直传 Blob）
+  //   模式 B：multipart/form-data file（v11.33 旧版，小文件仍可用）
+  let blobUrl: string | null = null;
+  let filename = 'document.docx';
+  let fileSize = 0;
+  let fileBuffer: Buffer | null = null;
 
-  const file = formData.get('file') as File | null;
-  if (!file) {
-    return NextResponse.json(
-      { ok: false, error: 'NO_FILE', message: '未找到文件字段 "file"' },
-      { status: 400 }
-    );
+  const contentType = request.headers.get('content-type') || '';
+
+  if (contentType.includes('application/json')) {
+    // 模式 A：从 Blob URL 拉取 docx
+    try {
+      const body = (await request.json()) as { blobUrl?: string; filename?: string };
+      blobUrl = body.blobUrl || null;
+      filename = body.filename || filename;
+    } catch {
+      return NextResponse.json(
+        { ok: false, error: 'INVALID_JSON', message: 'JSON body 解析失败' },
+        { status: 400 }
+      );
+    }
+    if (!blobUrl) {
+      return NextResponse.json(
+        { ok: false, error: 'NO_BLOB_URL', message: 'JSON 必须包含 blobUrl 字段' },
+        { status: 400 }
+      );
+    }
+    // 必须来自 kjgjs-blob store（防 SSRF）
+    if (!blobUrl.includes('public.blob.vercel-storage.com')) {
+      return NextResponse.json(
+        { ok: false, error: 'INVALID_BLOB_URL', message: 'blobUrl 必须来自 Vercel Blob' },
+        { status: 400 }
+      );
+    }
+    // 下载 docx
+    try {
+      const dlRes = await fetch(blobUrl);
+      if (!dlRes.ok) {
+        return NextResponse.json(
+          { ok: false, error: 'BLOB_FETCH_FAILED', message: `下载 Blob 失败: ${dlRes.status}` },
+          { status: 502 }
+        );
+      }
+      const arrBuf = await dlRes.arrayBuffer();
+      fileBuffer = Buffer.from(arrBuf);
+      fileSize = fileBuffer.length;
+    } catch (e) {
+      return NextResponse.json(
+        { ok: false, error: 'BLOB_FETCH_ERROR', message: `下载 Blob 出错: ${(e as Error).message}` },
+        { status: 502 }
+      );
+    }
+  } else {
+    // 模式 B：multipart/form-data（兼容 v11.33 旧调用，仅支持 ≤4MB 文件）
+    let formData: FormData;
+    try {
+      formData = await request.formData();
+    } catch {
+      return NextResponse.json(
+        { ok: false, error: 'INVALID_FORM_DATA', message: '请用 multipart/form-data 上传或 JSON { blobUrl }' },
+        { status: 400 }
+      );
+    }
+
+    const file = formData.get('file') as File | null;
+    if (!file) {
+      return NextResponse.json(
+        { ok: false, error: 'NO_FILE', message: '未找到文件字段 "file"' },
+        { status: 400 }
+      );
+    }
+    filename = file.name;
+    fileBuffer = Buffer.from(await file.arrayBuffer());
+    fileSize = fileBuffer.length;
   }
 
   // 3. 类型校验
-  const ext = file.name.toLowerCase().endsWith(ALLOWED_EXT) ? ALLOWED_EXT : '';
-  if (!ALLOWED_TYPES.includes(file.type) && ext !== ALLOWED_EXT) {
+  const ext = filename.toLowerCase().endsWith(ALLOWED_EXT) ? ALLOWED_EXT : '';
+  if (ext !== ALLOWED_EXT) {
     return NextResponse.json(
-      { ok: false, error: 'INVALID_FILE_TYPE', message: `仅支持 .docx 文件，当前: ${file.type || '未知'}` },
+      { ok: false, error: 'INVALID_FILE_TYPE', message: `仅支持 .docx 文件，当前: ${filename || '未知'}` },
       { status: 400 }
     );
   }
 
   // 4. 大小校验
-  if (file.size > MAX_SIZE) {
+  if (fileSize > MAX_SIZE) {
     return NextResponse.json(
-      { ok: false, error: 'FILE_TOO_LARGE', message: `文件过大: ${(file.size / 1024 / 1024).toFixed(2)}MB，最大 ${MAX_SIZE / 1024 / 1024}MB` },
+      { ok: false, error: 'FILE_TOO_LARGE', message: `文件过大: ${(fileSize / 1024 / 1024).toFixed(2)}MB，最大 ${MAX_SIZE / 1024 / 1024}MB` },
       { status: 400 }
     );
   }
 
   // 5. mammoth 解析
   try {
-    const fileBuffer = Buffer.from(await file.arrayBuffer());
+    // fileBuffer 已在前面模式 A/B 拿到，直接用
+    const buffer = fileBuffer!;
 
     // 图片处理：双模式降级（使用 mammoth.images.imgElement 工厂，符合 ImageConverter branded type）
     const imageConverter = mammoth.images.imgElement(async (image) => {
@@ -139,7 +198,7 @@ export async function POST(request: NextRequest) {
     });
 
     const result = await mammoth.convertToHtml(
-      { buffer: fileBuffer },
+      { buffer },
       {
         styleMap: [
           "p[style-name='Title'] => h1",
@@ -168,6 +227,15 @@ export async function POST(request: NextRequest) {
 
     // 判断图片模式（决定封面图是否需要曹总重新上传）
     const imageMode: 'blob' | 'base64' = process.env.BLOB_READ_WRITE_TOKEN ? 'blob' : 'base64';
+
+    // v11.33.2 清理：临时 docx blob 解析完就删，避免占用 Vercel Blob 存储
+    if (blobUrl && process.env.BLOB_READ_WRITE_TOKEN) {
+      try {
+        await del(blobUrl, { token: process.env.BLOB_READ_WRITE_TOKEN });
+      } catch (e) {
+        console.warn('[import/word] 临时 docx blob 清理失败（不影响主流程）', e);
+      }
+    }
 
     return NextResponse.json({
       ok: true,
