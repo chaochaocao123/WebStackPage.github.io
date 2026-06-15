@@ -1,10 +1,12 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { Header, Footer, QrCodeFloat } from '@/components/layout';
 import { ToolGrid } from '@/components/tool-grid';
 import { ToolCard } from '@/components/tool-card';
 import { getTools, getCategories } from '@/lib/data/tools-db';
 import { getNewsFromDB } from '@/lib/data/news';
-import { TrendingUp, FileText, Newspaper, Gift, Wrench, BookOpen, ChevronRight, Sparkles, Zap, MessageCircle } from 'lucide-react';
+import { getHotArticles } from '@/lib/data/articles';
+import { TrendingUp, FileText, Newspaper, Gift, Wrench, BookOpen, ChevronRight, Sparkles, Zap, MessageCircle, Flame, Eye, Clock } from 'lucide-react';
 
 // 首页 - 工具导航为主
 // v5 性能优化：首页 5 分钟 ISR 缓存，工具数据几小时才变，缓存对用户无感但首屏立省 700ms
@@ -21,6 +23,8 @@ export default async function HomePage() {
     title: n.title,
     publishedAt: n.publishedAt,
   }));
+  // 热门文章（v11.35 2026-06-15：A 点位用 1 篇首屏感知 + B 点位用 3 篇完整模块）
+  const hotArticles = await getHotArticles(3);
   
   // 取部分推荐工具到 Hero 区
   const featuredTools = tools.filter((t: any) => t.discount).slice(0, 8);
@@ -86,12 +90,50 @@ export default async function HomePage() {
                     <div className="text-xs text-slate-500 mt-1">公众号粉丝</div>
                   </div>
                 </div>
-                {/* 广告位 - 等待广告主 */}
-                <div className="hidden lg:block bg-gradient-to-br from-slate-100 to-slate-200 border-2 border-dashed border-slate-300 rounded-xl p-6 text-center">
-                  <div className="text-xs text-slate-500 mb-1">AD</div>
-                  <div className="text-sm text-slate-600">首页广告位</div>
-                  <div className="text-xs text-slate-400 mt-1">PC 端 Banner · 商务合作</div>
-                </div>
+                {/* 热门文章侧栏（v11.35 2026-06-15：A 点位，首屏 PC 端强感知） */}
+                {hotArticles[0] && (
+                  <Link
+                    href={`/articles/${hotArticles[0].slug}`}
+                    className="hidden lg:block bg-white border border-slate-200 rounded-xl p-4 hover:border-brand-400 hover:shadow-md transition-all group"
+                  >
+                    <div className="flex items-center gap-1.5 mb-3">
+                      <Flame className="w-4 h-4 text-orange-500" />
+                      <span className="text-xs font-bold text-slate-900">热门文章</span>
+                      <ChevronRight className="w-3 h-3 text-slate-400 ml-auto group-hover:text-brand-600 transition-colors" />
+                    </div>
+                    {hotArticles[0].cover ? (
+                      <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-slate-100 mb-3">
+                        <Image
+                          src={hotArticles[0].cover}
+                          alt={hotArticles[0].title}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 1024px) 0px, 320px"
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-full aspect-video rounded-lg bg-gradient-to-br from-brand-100 to-accent-100 mb-3 flex items-center justify-center">
+                        <FileText className="w-10 h-10 text-brand-500" />
+                      </div>
+                    )}
+                    <h3 className="text-sm font-semibold text-slate-900 line-clamp-2 group-hover:text-brand-600 transition-colors mb-2 min-h-[2.5rem]">
+                      {hotArticles[0].title}
+                    </h3>
+                    <p className="text-xs text-slate-500 line-clamp-2 mb-3 min-h-[2rem]">
+                      {hotArticles[0].excerpt}
+                    </p>
+                    <div className="flex items-center gap-3 text-xs text-slate-400 pt-2 border-t border-slate-100">
+                      <span className="flex items-center gap-1">
+                        <Eye className="w-3 h-3" />
+                        {hotArticles[0].viewCount || 0}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {relativeTime(hotArticles[0].publishedAt)}
+                      </span>
+                    </div>
+                  </Link>
+                )}
               </div>
             </div>
 
@@ -119,6 +161,67 @@ export default async function HomePage() {
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
               {featuredTools.map((tool: any) => (
                 <ToolCard key={tool.name} tool={tool} showCategory={true} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* 热门文章模块（v11.35 2026-06-15：B 点位，限时优惠之后 + 全部工具之前） */}
+        {hotArticles.length > 0 && (
+          <section className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center">
+                  <Flame className="w-4 h-4 text-white" />
+                </div>
+                <h2 className="text-xl font-bold text-slate-900">热门文章</h2>
+                <span className="text-xs text-slate-400">跨境运营干货精选</span>
+              </div>
+              <Link href="/articles" className="text-sm text-brand-600 hover:underline flex items-center gap-1">
+                查看全部 <ChevronRight className="w-4 h-4" />
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {hotArticles.map((article) => (
+                <Link
+                  key={article.id}
+                  href={`/articles/${article.slug}`}
+                  className="group bg-white border border-slate-200 rounded-xl overflow-hidden hover:border-brand-400 hover:shadow-lg transition-all"
+                >
+                  <div className="relative w-full aspect-video bg-slate-100">
+                    {article.cover ? (
+                      <Image
+                        src={article.cover}
+                        alt={article.title}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 100vw, 33vw"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-brand-100 to-accent-100 flex items-center justify-center">
+                        <FileText className="w-12 h-12 text-brand-500" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-4">
+                    <h3 className="text-base font-semibold text-slate-900 line-clamp-2 group-hover:text-brand-600 transition-colors mb-2 min-h-[3rem]">
+                      {article.title}
+                    </h3>
+                    <p className="text-sm text-slate-500 line-clamp-2 mb-3 min-h-[2.5rem]">
+                      {article.excerpt}
+                    </p>
+                    <div className="flex items-center gap-3 text-xs text-slate-400">
+                      <span className="flex items-center gap-1">
+                        <Eye className="w-3 h-3" />
+                        {article.viewCount || 0}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {relativeTime(article.publishedAt)}
+                      </span>
+                    </div>
+                  </div>
+                </Link>
               ))}
             </div>
           </section>

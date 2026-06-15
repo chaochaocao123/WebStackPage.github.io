@@ -65,3 +65,17 @@ export async function getArticleBySlugFromDB(slug: string): Promise<ArticleItem 
   if (!row) return null;
   return toItem(row);
 }
+
+/**
+ * 首页热门文章（v11.35 2026-06-15 新增）
+ * 排序策略：先 viewCount desc（热度），后 publishedAt desc（最新兜底）
+ * 当前 viewCount 都是 0，等真实数据进来后会自动按热度排
+ */
+export async function getHotArticles(limit = 3): Promise<ArticleItem[]> {
+  const rows = await prisma.article.findMany({
+    where: { status: 'published' },
+    orderBy: [{ viewCount: 'desc' }, { publishedAt: 'desc' }],
+    take: limit,
+  });
+  return rows.map(toItem);
+}
