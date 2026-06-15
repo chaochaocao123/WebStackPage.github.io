@@ -142,15 +142,12 @@ export async function POST(request: NextRequest) {
       { buffer: fileBuffer },
       {
         styleMap: [
-          "p[style-name='Title'] => h1:fresh",
-          "h1 => h1:fresh",
-          "h2 => h2:fresh",
-          "h3 => h3:fresh",
-          "p[style-name='Heading 1'] => h1:fresh",
-          "p[style-name='Heading 2'] => h2:fresh",
-          "p[style-name='Heading 3'] => h3:fresh",
-          "p[style-name='List Paragraph'] => li:fresh",
-          "p[style-name='Quote'] => blockquote:fresh",
+          "p[style-name='Title'] => h1",
+          "p[style-name='Heading 1'] => h1",
+          "p[style-name='Heading 2'] => h2",
+          "p[style-name='Heading 3'] => h3",
+          "p[style-name='List Paragraph'] => li",
+          "p[style-name='Quote'] => blockquote",
         ],
         convertImage: imageConverter,
       }
