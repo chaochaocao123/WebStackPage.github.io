@@ -2,7 +2,6 @@ import Link from 'next/link';
 import { Header, Footer, QrCodeFloat } from '@/components/layout';
 import { ToolGrid } from '@/components/tool-grid';
 import { ToolCard } from '@/components/tool-card';
-import { QuickCategoryLinks } from './_components/QuickCategoryLinks';
 import { getTools, getCategories } from '@/lib/data/tools-db';
 import { getNewsFromDB } from '@/lib/data/news';
 import { TrendingUp, FileText, Newspaper, Gift, Wrench, BookOpen, ChevronRight, Sparkles, Zap, MessageCircle } from 'lucide-react';
@@ -25,8 +24,7 @@ export default async function HomePage() {
   
   // 取部分推荐工具到 Hero 区
   const featuredTools = tools.filter((t: any) => t.discount).slice(0, 8);
-  // 头条分类（首页首屏展示）
-  const topCategories = categories.filter((c: any) => c.key !== 'all').slice(0, 8);
+  // 2026-06-15 v11.34: 删首页工具分类 Tab（曹总：与下方"全部工具"分类筛选重复，没意义）
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -97,8 +95,6 @@ export default async function HomePage() {
               </div>
             </div>
 
-            {/* 快捷分类入口 */}
-            <QuickCategoryLinks categories={topCategories} />
           </div>
         </section>
 

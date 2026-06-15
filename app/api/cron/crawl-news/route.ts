@@ -8,12 +8,14 @@
 //   - 写入 News.content 字段
 //   - 已有 url 但没 content 的也会回填
 //   - 用 articlePcUrl 去重，已存在的不更新（保留人工编辑）
-// 2026-06-13 v4: 清洗入库 title（去掉"卖家之家早讯 | "等前缀），保证全站不出"卖家之家"字眼
-//   注：cheerio 仍保留在 deps 中（crawl-deals 在用）
+// 2026-06-13 v4: 计划清洗入库 title（去掉"卖家之家早讯 | "等前缀），保证全站不出"卖家之家"字眼
+//   注：v4 当时漏实现（注释承诺但代码没改），靠 scripts/news-clean-warejia.ts 一次性清洗老数据兜底
+// 2026-06-15 v5: 真正实现 v4 承诺的清洗（抽 lib/news-clean.ts 共享函数）
 
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { PrismaClient } from '@prisma/client';
+import { cleanNewsTitle } from '@/lib/news-clean';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60; // 60s 超时
@@ -177,10 +179,14 @@ async function crawlMjzj() {
           typeof item.publishDateTime?.value === 'number' ? item.publishDateTime.value : Date.now()
         );
 
+        // 2026-06-15 v5: title 清洗（v4 注释承诺但漏实现，这次补上）
+        const rawTitle = item.title.trim().slice(0, 200);
+        const cleaned = cleanNewsTitle(rawTitle);
+        const finalTitle = cleaned ? cleaned.cleaned : rawTitle;
         // 新增：content 留空（详情抓正文在批处理阶段补）
         await prisma.news.create({
           data: {
-            title: item.title.trim().slice(0, 200),
+            title: finalTitle,
             url: item.articlePcUrl,
             source: 'mjzj',
             sourceLogo: authorLogo || null,

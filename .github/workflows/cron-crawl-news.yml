@@ -1,0 +1,47 @@
+# GitHub Actions 兜底 kjgjs.cn 资讯抓取
+# 背景：Vercel Hobby cron 不保证 100% 准时执行，6-13/6-15 都没触发
+# 决策 157：选 B（GitHub Actions 免费兜底）替代升级 Pro $20/月
+# 触发：每天北京 9:00 / 18:00（UTC 1:00 / 10:00），与 Vercel cron 错开 1 小时防止双跑
+# Vercel cron 仍在跑（0 1 * * *），GitHub Actions 兜底 UTC 10:00 = 北京 18:00
+# 失败时 action 自动发邮件给曹总
+#
+# 必配 GitHub Secret：CRON_SECRET（值从 Vercel Dashboard → Settings → Environment Variables 拿）
+
+name: kjgjs-cron-crawl-news
+
+on:
+  schedule:
+    # UTC 1:00 + 10:00 = 北京 9:00 + 18:00
+    # 与 Vercel cron (UTC 1:00) 错开避免双跑（Vercel 在 1:00，GitHub Actions 在 10:00）
+    - cron: '0 1,10 * * *'
+  workflow_dispatch: # 允许手动触发
+
+jobs:
+  crawl-news:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: 调用 kjgjs 抓取 API
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "❌ 错误: GitHub Secret CRON_SECRET 未配置"
+            echo "请去 https://github.com/settings/repos 配 CRON_SECRET"
+            exit 1
+          fi
+          echo "🕷️  $(date -u '+%Y-%m-%d %H:%M:%S') UTC 开始抓取"
+          response=$(curl -sS -w "\nHTTP_STATUS:%{http_code}" -X GET \
+            "https://kjgjs.cn/api/cron/crawl-news" \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            -H "User-Agent: github-actions-cron-crawl-news" \
+            --max-time 120)
+          status=$(echo "$response" | grep -oP 'HTTP_STATUS:\K\d+')
+          body=$(echo "$response" | sed 's/HTTP_STATUS:[0-9]*$//')
+          echo "📥 响应: $body"
+          if [ "$status" = "200" ]; then
+            echo "✅ 成功"
+          else
+            echo "❌ 失败: HTTP $status"
+            exit 1
+          fi
