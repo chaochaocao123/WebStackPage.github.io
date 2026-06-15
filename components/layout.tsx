@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useState } from 'react';
 import { Search, Menu, X, Video, MessageCircle } from 'lucide-react';
 
@@ -36,11 +37,16 @@ export function Header() {
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16">
-            {/* Logo */}
+            {/* Logo - v11.44 改用 Image 引用 /images/logo/logo.png（610x610 方形新 logo） */}
             <Link href="/" className="flex items-center gap-2 group">
-              <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white font-bold text-lg shadow-md">
-                跨
-              </div>
+              <Image
+                src="/images/logo/logo.png"
+                alt="跨境工具说"
+                width={36}
+                height={36}
+                className="w-9 h-9 rounded-lg shadow-md group-hover:shadow-lg transition-shadow"
+                priority
+              />
               <div>
                 <div className="font-bold text-slate-900 leading-tight">跨境工具说</div>
                 <div className="text-[10px] text-slate-500 leading-tight">kjgjs.cn</div>
@@ -195,7 +201,13 @@ export function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-6 gap-8">
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white font-bold">跨</div>
+              <Image
+                src="/images/logo/logo.png"
+                alt="跨境工具说"
+                width={32}
+                height={32}
+                className="w-8 h-8 rounded-lg"
+              />
               <div className="font-bold text-white">跨境工具说</div>
             </div>
             <p className="text-sm leading-relaxed">
