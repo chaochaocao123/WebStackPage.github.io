@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/db';
-import { Plus, ExternalLink, FileCode2, FileJson, Zap, FileEdit, CheckCircle2 } from 'lucide-react';
+import { Plus, ExternalLink, FileCode2, FileJson, Zap, FileEdit, CheckCircle2, Upload } from 'lucide-react';
 import { deleteArticle } from '../actions';
 import { DeleteRowButton } from '../_components/DeleteWithConfirm';
 import { Pagination, ADMIN_PAGE_SIZE } from '../_components/Pagination';
@@ -55,6 +55,13 @@ export default async function ArticlesPage({
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <Link
+            href="/admin/articles/import"
+            className="inline-flex items-center gap-2 bg-white text-slate-700 border border-slate-300 px-4 py-2 rounded-lg hover:bg-slate-50 transition shadow-sm"
+          >
+            <Upload className="w-4 h-4" />
+            导入 Word
+          </Link>
           <Link
             href="/admin/articles/new"
             className="inline-flex items-center gap-2 bg-brand-600 text-white px-4 py-2 rounded-lg hover:bg-brand-700 transition shadow-sm"
