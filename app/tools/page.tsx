@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Header, Footer } from '@/components/layout';
-import { Wrench, Calculator, Ruler, Package, MapPin, ArrowRight, Sparkles, Clock } from 'lucide-react';
+import { Wrench, Calculator, Ruler, Package, MapPin, Barcode, Globe, Palette, ArrowRight, Sparkles, Clock } from 'lucide-react';
 
 export const metadata = {
   title: '实用工具 - 跨境工具说',
@@ -39,6 +39,30 @@ const TOOLS_LIST = [
     status: 'ready',
     color: 'from-orange-500 to-red-500',
     href: '/tools/tracking',
+  },
+  {
+    icon: Barcode,
+    name: '条形码/二维码生成器',
+    desc: 'EAN-13/UPC-A/Code 128/QR Code 在线生成',
+    status: 'ready',
+    color: 'from-pink-500 to-rose-500',
+    href: '/tools/barcode',
+  },
+  {
+    icon: Globe,
+    name: '时区转换器',
+    desc: '全球 20+ 主要城市时区实时转换',
+    status: 'ready',
+    color: 'from-indigo-500 to-blue-500',
+    href: '/tools/timezone',
+  },
+  {
+    icon: Palette,
+    name: '颜色取色器',
+    desc: 'HEX/RGB/HSL 互转 + 调色板建议',
+    status: 'ready',
+    color: 'from-amber-500 to-orange-500',
+    href: '/tools/color-picker',
   },
   {
     icon: Calculator,
