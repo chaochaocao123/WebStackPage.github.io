@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db';
 import { updateFriendLink, deleteFriendLink } from '../../actions';
 import { ArrowLeft } from 'lucide-react';
 import { DeletePageButton } from '../../_components/DeleteWithConfirm';
+import { ImageUploader } from '../../_components/ImageUploader';
 
 export default async function EditFriendPage({
   params,
@@ -96,18 +97,13 @@ export default async function EditFriendPage({
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Logo URL（可选）
-            </label>
-            <input
-              type="url"
-              name="logo"
-              defaultValue={friend.logo || ''}
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
-              placeholder="https://..."
-            />
-          </div>
+          <ImageUploader
+            name="logo"
+            label="Logo URL（可选）"
+            defaultValue={friend.logo}
+            placeholder="https://..."
+            hint="支持直接上传或粘 URL"
+          />
 
           <div className="flex items-center gap-2 pt-2">
             <input

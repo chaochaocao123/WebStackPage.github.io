@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/db';
 import { updateAdSpot } from '../../actions';
 import { ArrowLeft } from 'lucide-react';
+import { ImageUploader } from '../../_components/ImageUploader';
 
 export default async function EditAdSpotPage({
   params,
@@ -53,23 +54,13 @@ export default async function EditAdSpotPage({
             <p className="text-xs text-slate-500 mt-1">Key 用于代码中引用，不可修改</p>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              图片 URL
-            </label>
-            <input
-              type="url"
-              name="imageUrl"
-              defaultValue={adSpot.imageUrl}
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
-              placeholder="https://..."
-            />
-            {adSpot.imageUrl && (
-              <div className="mt-2">
-                <img src={adSpot.imageUrl} alt="预览" className="h-20 rounded border border-slate-200" />
-              </div>
-            )}
-          </div>
+          <ImageUploader
+            name="imageUrl"
+            label="图片 URL"
+            defaultValue={adSpot.imageUrl}
+            placeholder="https://..."
+            hint="支持直接上传到 Vercel Blob 或粘 URL"
+          />
 
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">

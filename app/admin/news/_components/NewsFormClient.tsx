@@ -13,6 +13,7 @@ import {
   Link2,
   Image as ImageIcon,
 } from 'lucide-react';
+import { ImageUploader } from '../../_components/ImageUploader';
 
 const SITE_URL = 'https://kjgjs.cn';
 
@@ -182,18 +183,13 @@ export function NewsFormClient({ initialData, formAction, deleteAction, preFormC
               />
             </div>
 
-            {/* 封面图 */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">封面图 URL</label>
-              <input
-                type="url"
-                name="cover"
-                value={cover}
-                onChange={(e) => setCover(e.target.value)}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
-                placeholder="https://... (可选)"
-              />
-            </div>
+            <ImageUploader
+              name="cover"
+              label="封面图"
+              defaultValue={cover}
+              placeholder="https://... (可选)"
+              hint="可上传到 Vercel Blob 或直接粘 URL"
+            />
 
             {/* 发布时间 + 置顶 */}
             <div className="grid grid-cols-2 gap-6">

@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db';
 import { updateTool, deleteTool } from '../../actions';
 import { ArrowLeft } from 'lucide-react';
 import { DeletePageButton } from '../../_components/DeleteWithConfirm';
+import { ImageUploader } from '../../_components/ImageUploader';
 
 export default async function EditToolPage({
   params,
@@ -118,17 +119,13 @@ export default async function EditToolPage({
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Logo URL
-            </label>
-            <input
-              type="url"
-              name="logo"
-              defaultValue={tool.logo || ''}
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
-            />
-          </div>
+          <ImageUploader
+            name="logo"
+            label="Logo URL"
+            defaultValue={tool.logo}
+            placeholder="https://..."
+            hint="支持直接上传到 Vercel Blob 或粘 URL"
+          />
 
           <div className="flex items-center gap-2">
             <input
