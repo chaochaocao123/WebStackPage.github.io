@@ -72,6 +72,8 @@ type InitialData = {
   prefillExcerpt?: string;
   prefillContent?: string;
   prefillCover?: string;
+  // v11.33.1 标记这次有 import 内容（hasContent=1），从 localStorage 读 content
+  prefillHasContent?: string;
 };
 
 type Props = {
@@ -109,11 +111,31 @@ export function ArticleFormClient({ initialData, formAction, draftAction, delete
   const [slugAuto, setSlugAuto] = useState(!isEdit && !initialData?.prefillSlug); // 导入预填时关闭自动
   const [excerpt, setExcerpt] = useState(initialData?.prefillExcerpt || initialData?.excerpt || '');
   const [excerptAuto, setExcerptAuto] = useState(!isEdit && !initialData?.prefillExcerpt); // 导入预填时关闭自动
-  const [content, setContent] = useState(
-    initialData?.prefillContent
-      ? decodeURIComponent(initialData.prefillContent)
-      : initialData?.content || ''
-  );
+  // v11.33.1 Word 导入：content 走 localStorage（避免 URL 截断 base64 图片）
+  // 优先级：localStorage（import） > URL prefillContent > initialData.content
+  const [content, setContent] = useState(() => {
+    if (initialData?.prefillHasContent === '1') {
+      try {
+        const lsContent = localStorage.getItem('kjgjs_word_import_content');
+        if (lsContent) {
+          // 已读即焚：避免老数据干扰下次新建
+          localStorage.removeItem('kjgjs_word_import_content');
+          localStorage.removeItem('kjgjs_word_import_ts');
+          return lsContent;
+        }
+      } catch (e) {
+        console.warn('[article-form] 读 localStorage 失败，兜底用 URL', e);
+      }
+    }
+    if (initialData?.prefillContent) {
+      try {
+        return decodeURIComponent(initialData.prefillContent);
+      } catch {
+        return initialData.prefillContent;
+      }
+    }
+    return initialData?.content || '';
+  });
   const [cover, setCover] = useState(initialData?.prefillCover || initialData?.cover || '');
   // v11.32 封面图上传
   const [coverUploading, setCoverUploading] = useState(false);

@@ -55,14 +55,26 @@ export default function ImportWordPage() {
         setStatus('success');
 
         // 预填 query string 跳转到新建页
+        // v11.33.1 修复：content 含大量 base64 图片，URL 长度限制会截断数据
+        // 改用 localStorage 跨标签传，capacity 5-10MB 不限长度
         const params = new URLSearchParams();
         params.set('title', data.title || '');
         params.set('slug', data.slug || '');
         params.set('excerpt', data.excerpt || '');
         params.set('cover', data.cover || '');
-        // content 很长，用 encodeURIComponent
+        // 把 content（含 base64 图片）存到 localStorage，跳到新页时读
         if (data.content) {
-          params.set('content', encodeURIComponent(data.content));
+          try {
+            localStorage.setItem('kjgjs_word_import_content', data.content);
+            // 时间戳用于"已读即焚"，避免老数据被误读
+            localStorage.setItem('kjgjs_word_import_ts', String(Date.now()));
+            // 标记这次有 import 内容，让新页面知道该读
+            params.set('hasContent', '1');
+          } catch (e) {
+            // localStorage 失败（如 quota 满）兜底用 URL
+            console.warn('[import/word] localStorage 写入失败，兜底用 URL', e);
+            params.set('content', encodeURIComponent(data.content));
+          }
         }
 
         // 提示曹总图片模式
