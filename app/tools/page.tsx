@@ -35,9 +35,10 @@ const TOOLS_LIST = [
   {
     icon: MapPin,
     name: '物流轨迹查询',
-    desc: '聚合 51tracking、track718、track123 等',
-    status: 'soon',
+    desc: '基于 17track 官方接口，支持 2800+ 快递公司',
+    status: 'ready',
     color: 'from-orange-500 to-red-500',
+    href: '/tools/tracking',
   },
   {
     icon: Calculator,
