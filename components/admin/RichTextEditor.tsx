@@ -4,6 +4,7 @@ import { useEditor, EditorContent, Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
+import Blockquote from '@tiptap/extension-blockquote';
 import { useEffect, useRef, useState } from 'react';
 import {
   Bold,
@@ -23,6 +24,8 @@ import {
   X,
   Upload,
   Loader2,
+  Lightbulb,
+  BookMarked,
 } from 'lucide-react';
 
 type Props = {
@@ -31,11 +34,31 @@ type Props = {
   placeholder?: string;
 };
 
+// v11.46 阶段八 GEO 站内优化 · 自定义 Blockquote 扩展
+// 继承默认 Blockquote，加 data-type 属性（区分普通引用 vs GEO 答案块）
+// v11.46 适配：Tiptap 5.x schema 允许的 data-type attribute
+const GeoBlockquote = Blockquote.extend({
+  addAttributes() {
+    return {
+      ...(this.parent?.() || {}),
+      'data-type': {
+        default: 'quote',
+        parseHTML: (el) => (el as HTMLElement).getAttribute('data-type') || 'quote',
+        renderHTML: (attrs) => {
+          const t = attrs['data-type'];
+          return t && t !== 'quote' ? { 'data-type': t } : {};
+        },
+      },
+    };
+  },
+});
+
 /**
  * v11.32 富文本编辑器（Tiptap 5.x）
  * - StarterKit：粗体/斜体/删除线/行内代码/H1-H3/列表/引用/撤销重做
  * - Image 扩展：图片插入 + alt + 宽高
  * - Link 扩展：链接 + 自动探测 URL
+ * - v11.46 GEO：自定义 Blockquote 扩展（data-type=answer/quote）
  * - 图片上传：调用 /api/upload（Vercel Blob），token 缺失时降级到 URL 输入对话框
  *
  * 必加 immediatelyRender: false 避免 Next.js SSR hydration mismatch
@@ -48,13 +71,21 @@ export function RichTextEditor({ value, onChange, placeholder }: Props) {
   const [imageAlt, setImageAlt] = useState('');
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [tokenMissing, setTokenMissing] = useState(false);
+  // v11.46 GEO：引用对话框状态
+  const [showCitationDialog, setShowCitationDialog] = useState(false);
+  const [citationName, setCitationName] = useState('');
+  const [citationUrl, setCitationUrl] = useState('');
+  const [citationError, setCitationError] = useState<string | null>(null);
 
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
         // Heading 默认 H1-H6 全开；常用 H2/H3，关掉 H4-H6
         heading: { levels: [1, 2, 3] },
+        // v11.46 阶段八：禁用 StarterKit 默认 Blockquote，用自定义 GeoBlockquote
+        blockquote: false,
       }),
+      GeoBlockquote,
       Image.configure({
         HTMLAttributes: {
           class: 'rounded-lg max-w-full h-auto my-3',
@@ -161,6 +192,10 @@ export function RichTextEditor({ value, onChange, placeholder }: Props) {
           setUploadError(null);
           setTokenMissing(false);
         }}
+        onOpenCitationDialog={() => {
+          setShowCitationDialog(true);
+          setCitationError(null);
+        }}
       />
       <input
         ref={fileInputRef}
@@ -199,6 +234,40 @@ export function RichTextEditor({ value, onChange, placeholder }: Props) {
           tokenMissing={tokenMissing}
         />
       )}
+
+      {/* v11.46 GEO：引用对话框（来源名 + URL） */}
+      {showCitationDialog && (
+        <CitationDialog
+          onClose={() => setShowCitationDialog(false)}
+          citationName={citationName}
+          setCitationName={setCitationName}
+          citationUrl={citationUrl}
+          setCitationUrl={setCitationUrl}
+          citationError={citationError}
+          onInsert={() => {
+            if (!citationName.trim()) {
+              setCitationError('请输入来源名称');
+              return;
+            }
+            // 自动计算下一个编号（基于当前 content 已有 citation-ref 数量）
+            const html = editor.getHTML();
+            const existingCount = (html.match(/class="citation-ref"/g) || []).length;
+            const nextNum = existingCount + 1;
+            // 插入带 data-source-name + data-source-url 的 Link
+            editor
+              .chain()
+              .focus()
+              .insertContent(
+                `<a class="citation-ref" data-source-name="${citationName.replace(/"/g, '&quot;')}" data-source-url="${(citationUrl || '').replace(/"/g, '&quot;')}" href="#ref-${nextNum}"><sup>[${nextNum}]</sup></a>`,
+              )
+              .run();
+            setCitationName('');
+            setCitationUrl('');
+            setCitationError(null);
+            setShowCitationDialog(false);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -209,10 +278,12 @@ function Toolbar({
   editor,
   onUploadClick,
   onImageDialogOpen,
+  onOpenCitationDialog, // v11.46 GEO：引用按钮回调
 }: {
   editor: Editor;
   onUploadClick: () => void;
   onImageDialogOpen: () => void;
+  onOpenCitationDialog: () => void;
 }) {
   const [linkUrl, setLinkUrl] = useState('');
   const [showLinkInput, setShowLinkInput] = useState(false);
@@ -256,8 +327,50 @@ function Toolbar({
       <ToolButton onClick={() => editor.chain().focus().toggleOrderedList().run()} active={editor.isActive('orderedList')} title="有序列表">
         <ListOrdered className="w-4 h-4" />
       </ToolButton>
-      <ToolButton onClick={() => editor.chain().focus().toggleBlockquote().run()} active={editor.isActive('blockquote')} title="引用">
+      <ToolButton
+        onClick={() => {
+          if (editor.isActive('blockquote')) {
+            // 已有 blockquote：切到 answer 类型
+            editor.chain().focus().updateAttributes('blockquote', { 'data-type': 'answer' }).run();
+          } else {
+            // 没 blockquote：新建一个 answer 类型的 blockquote
+            editor.chain().focus().setBlockquote().updateAttributes('blockquote', { 'data-type': 'answer' }).run();
+            // 自动填入提示文本
+            const { state, dispatch } = editor.view;
+            const { from } = state.selection;
+            // 在 blockquote 末尾插入提示文字
+            editor
+              .chain()
+              .focus()
+              .insertContent('<p data-placeholder="true">请输入 40-75 字答案（AI 引用关键字段）…</p>')
+              .run();
+          }
+        }}
+        active={editor.isActive('blockquote', { 'data-type': 'answer' })}
+        title="答案块（v11.46 GEO：40-75 字直答让 AI 引用率 +20%）"
+      >
+        <Lightbulb className="w-4 h-4 text-blue-500" />
+      </ToolButton>
+      <ToolButton
+        onClick={() => {
+          if (editor.isActive('blockquote', { 'data-type': 'answer' })) {
+            // 当前在答案块：切到普通引用
+            editor.chain().focus().updateAttributes('blockquote', { 'data-type': 'quote' }).run();
+          } else {
+            editor.chain().focus().toggleBlockquote().run();
+          }
+        }}
+        active={editor.isActive('blockquote', { 'data-type': 'quote' })}
+        title="普通引用"
+      >
         <Quote className="w-4 h-4" />
+      </ToolButton>
+      <ToolButton
+        onClick={onOpenCitationDialog}
+        active={false}
+        title="引用来源（v11.46 GEO：学术风格 + 文末自动聚合）"
+      >
+        <BookMarked className="w-4 h-4 text-blue-500" />
       </ToolButton>
       <Divider />
       <div className="relative">
@@ -465,6 +578,109 @@ function ImageDialog({
             {uploadError}
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+// v11.46 阶段八 GEO 站内优化 · 引用来源对话框
+// 输入：来源名称（必填）+ 来源 URL（可选）
+// 输出：插入 <a class="citation-ref" data-source-name="..." data-source-url="..."><sup>[N]</sup></a>
+// 文末自动聚合「参考资料」区块（由 Article 详情页渲染时提取）
+function CitationDialog({
+  onClose,
+  citationName,
+  setCitationName,
+  citationUrl,
+  setCitationUrl,
+  citationError,
+  onInsert,
+}: {
+  onClose: () => void;
+  citationName: string;
+  setCitationName: (v: string) => void;
+  citationUrl: string;
+  setCitationUrl: (v: string) => void;
+  citationError: string | null;
+  onInsert: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-5">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-base font-semibold text-slate-900 flex items-center gap-1.5">
+            <BookMarked className="w-4 h-4 text-blue-500" />
+            插入引用来源
+          </h3>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1 hover:bg-slate-100 rounded"
+            title="关闭"
+          >
+            <X className="w-4 h-4 text-slate-500" />
+          </button>
+        </div>
+        <p className="text-xs text-slate-500 mb-3">
+          引用会自动编号并在文末聚合「参考资料」区块。建议每篇文章 ≥3 个具体数字 + ≥1 个权威来源。
+        </p>
+        <div className="space-y-3">
+          <div>
+            <label className="block text-xs font-medium text-slate-700 mb-1">
+              来源名称 <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={citationName}
+              onChange={(e) => setCitationName(e.target.value)}
+              placeholder="如：艾媒咨询 2026 Q1 AI 应用洞察报告"
+              className="w-full px-3 py-2 text-sm border border-slate-300 rounded outline-none focus:ring-1 focus:ring-brand-500"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  onInsert();
+                }
+              }}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-700 mb-1">
+              来源 URL <span className="text-slate-400">（可选）</span>
+            </label>
+            <input
+              type="url"
+              value={citationUrl}
+              onChange={(e) => setCitationUrl(e.target.value)}
+              placeholder="https://..."
+              className="w-full px-3 py-2 text-sm border border-slate-300 rounded outline-none focus:ring-1 focus:ring-brand-500"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  onInsert();
+                }
+              }}
+            />
+          </div>
+          {citationError && (
+            <p className="text-xs text-red-600">{citationError}</p>
+          )}
+        </div>
+        <div className="mt-5 flex items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100 rounded"
+          >
+            取消
+          </button>
+          <button
+            type="button"
+            onClick={onInsert}
+            className="px-3 py-1.5 text-sm bg-brand-600 text-white rounded hover:bg-brand-700"
+          >
+            插入引用
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -8,6 +8,7 @@ import { ArrowLeft, Calendar, User, Tag, ExternalLink, Wrench, AlertTriangle } f
 import { prisma } from '@/lib/db';
 import { getRecommendedToolsByCategory } from '@/lib/seo/related-content';
 import { proxifyImgUrl, proxifyWechatImagesInHtml } from '@/lib/article-content-render';
+import { extractAbstract, generateArticleFAQs, generateArticleFAQJsonLd, extractCitations } from '@/lib/seo/article-faq';
 
 const SITE_URL = 'https://kjgjs.cn';
 const SITE_NAME = '跨境工具说';
@@ -118,6 +119,18 @@ export default async function ArticleDetailPage({
   // v11.12 P1-6 内链：推荐工具（按 category 拉 6 个）
   const recommendedTools = await getRecommendedToolsByCategory(item.category || '');
 
+  // v11.46 阶段八 GEO：生成 Article FAQ（参考 Tool 详情页 v11.12 P1-5 模式）
+  const articleFaqs = generateArticleFAQs({
+    title: item.title,
+    category: item.category,
+    tags: (() => {
+      try { return JSON.parse(item.tags); } catch { return []; }
+    })(),
+    excerpt: item.excerpt,
+    content: item.content || '',
+  });
+  const articleFaqJsonLd = generateArticleFAQJsonLd(articleFaqs);
+
   const tags: string[] = (() => {
     try { return JSON.parse(item.tags); } catch { return []; }
   })();
@@ -130,12 +143,16 @@ export default async function ArticleDetailPage({
 
   const updatedAtStr = new Date(item.updatedAt).toLocaleString('zh-CN');
 
-  // JSON-LD: Article
+  // v11.46 阶段八 GEO：从 answer-block 提取 40-75 字 abstract（Schema 关键字段）
+  const abstract = extractAbstract(item.content || '', 75) || item.excerpt || extractText(item.content || '', 75);
+
+  // JSON-LD: Article（v11.46 升级：加 abstract 字段）
   const articleJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Article',
     headline: item.title,
     description: item.excerpt || extractText(item.content || '', 160),
+    abstract, // v11.46 阶段八：AI 引用率 +20% 的关键字段
     image: item.cover ? [item.cover] : [`${SITE_URL}/og-image.png`],
     datePublished: new Date(item.publishedAt).toISOString(),
     dateModified: new Date(item.updatedAt).toISOString(),
@@ -160,6 +177,11 @@ export default async function ArticleDetailPage({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
+        />
+        {/* JSON-LD: FAQPage（v11.46 阶段八 GEO 站内优化） */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(articleFaqJsonLd) }}
         />
 
         {/* 面包屑（视觉 + BreadcrumbList JSON-LD 一体化） */}
@@ -233,6 +255,30 @@ export default async function ArticleDetailPage({
               className="news-content prose prose-slate max-w-none"
               dangerouslySetInnerHTML={{ __html: proxifyWechatImagesInHtml(item.content || '') }}
             />
+
+            {/* v11.46 阶段八 GEO：文末参考资料聚合（自动从 content 提取 citation-ref） */}
+            {(() => {
+              const refs = extractCitations(item.content || '');
+              if (refs.length === 0) return null;
+              return (
+                <div className="references-block">
+                  <h4>📚 参考资料</h4>
+                  <ol>
+                    {refs.map((ref) => (
+                      <li key={ref.id}>
+                        {ref.url ? (
+                          <a href={ref.url} target="_blank" rel="noopener noreferrer">
+                            {ref.name}
+                          </a>
+                        ) : (
+                          <span>{ref.name}</span>
+                        )}
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              );
+            })()}
 
             {/* 标签 */}
             {tags.length > 0 && (

@@ -120,6 +120,14 @@ export default async function ToolDetailPage({ params }: PageProps) {
         applicationCategory: 'BusinessApplication',
         applicationSubCategory: tool.categoryKey,
         operatingSystem: 'Web',
+        // v11.46 阶段八 GEO：featureList 让 AI 抓功能列表（引用率 +10%）
+        featureList: tool.business
+          ? tool.business
+              .split(/[，,、;；]/)
+              .map((s) => s.trim())
+              .filter((s) => s.length >= 2 && s.length <= 30)
+              .slice(0, 6)
+          : [`${tool.categoryKey} 工具`, `跨境卖家专业服务`],
         offers: {
           '@type': 'Offer',
           url: tool.affiliateUrl || tool.url,
