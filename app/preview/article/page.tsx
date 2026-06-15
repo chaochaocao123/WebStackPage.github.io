@@ -1,12 +1,13 @@
 /**
  * v11.32.1 文章预览页（实时）
+ * v11.32.2 修复：用 localStorage 跨标签共享（sessionStorage 是每个标签页独立 session）
  *
  * 目的：解决 v11.32 "新窗口打开看完整"链接跳 /articles/{slug} 在新建/草稿状态 404 的问题
  *
  * 设计：
  * - 放根路由 /preview/article（不在 admin 下），复用前台 Header/Footer 布局
- * - 数据从 sessionStorage 读（'kjgjs_article_preview'），不受 URL 长度限制
- * - 编辑页 onClick 时把当前所有字段写 sessionStorage，新窗口同源可读
+ * - 数据从 localStorage 读（'kjgjs_article_preview'），跨标签同源可读
+ * - 编辑页 onClick 时把当前所有字段写 localStorage，新窗口可读
  * - 不写 JSON-LD（避免假页面被百度收录）
  * - 不更新 viewCount
  * - 不显示推荐工具（避免与当前内容不匹配）
@@ -56,15 +57,25 @@ export default function ArticlePreviewPage() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    try {
-      const raw = sessionStorage.getItem(SESSION_KEY);
-      if (raw) {
-        setData(JSON.parse(raw));
+    const load = () => {
+      try {
+        const raw = localStorage.getItem(SESSION_KEY);
+        if (raw) {
+          setData(JSON.parse(raw));
+        }
+      } catch (e) {
+        console.error('[preview] parse localStorage failed', e);
       }
-    } catch (e) {
-      console.error('[preview] parse sessionStorage failed', e);
-    }
-    setLoaded(true);
+      setLoaded(true);
+    };
+    load();
+    // v11.32.2 实时：编辑页改字段后再点预览时，新窗口能拿到最新数据
+    // 加 storage 事件监听，编辑页 setItem 时本窗口也能响应（如果编辑和预览都在新窗口打开的场景）
+    const onStorage = (ev: StorageEvent) => {
+      if (ev.key === SESSION_KEY || ev.key === null) load();
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
   }, []);
 
   // 初始加载中：避免 hydration mismatch

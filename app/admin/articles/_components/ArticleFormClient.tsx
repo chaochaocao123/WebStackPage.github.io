@@ -225,7 +225,7 @@ export function ArticleFormClient({ initialData, formAction, draftAction, delete
   };
 
   // v11.32.1 文章实时预览（解决 v11.32 跳 /articles/{slug} 在新建/草稿时 404）
-  // 写 sessionStorage → 新窗口 /preview/article 同源可读
+  // v11.32.2 修复：用 localStorage 跨标签共享（sessionStorage 是每个标签页独立 session，新窗口读不到）
   const openPreview = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
     const previewData = {
@@ -243,11 +243,11 @@ export function ArticleFormClient({ initialData, formAction, draftAction, delete
       sourceUrl,
     };
     try {
-      sessionStorage.setItem('kjgjs_article_preview', JSON.stringify(previewData));
+      localStorage.setItem('kjgjs_article_preview', JSON.stringify(previewData));
       window.open('/preview/article', '_blank', 'noopener,noreferrer');
     } catch (err) {
-      console.error('[preview] 写 sessionStorage 失败', err);
-      alert('浏览器不支持 sessionStorage，请换一个现代浏览器');
+      console.error('[preview] 写 localStorage 失败', err);
+      alert('浏览器存储不可用，请换一个现代浏览器');
     }
   };
 
