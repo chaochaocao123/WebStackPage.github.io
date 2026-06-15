@@ -6,6 +6,7 @@ import { ToolCard } from '@/components/tool-card';
 import { getTools, getCategories } from '@/lib/data/tools-db';
 import { getNewsFromDB } from '@/lib/data/news';
 import { getHotArticles } from '@/lib/data/articles';
+import { getAdSpotByKey } from '@/lib/data/ad-spots';
 import { TrendingUp, FileText, Newspaper, Gift, Wrench, BookOpen, ChevronRight, Sparkles, Zap, MessageCircle, Flame, Eye, Clock } from 'lucide-react';
 
 // 首页 - 工具导航为主
@@ -25,6 +26,8 @@ export default async function HomePage() {
   }));
   // 热门文章（v11.35 2026-06-15：A 点位用 1 篇首屏感知 + B 点位用 3 篇完整模块）
   const hotArticles = await getHotArticles(3);
+  // 首页 Hero 右侧广告位（v11.37 2026-06-15：曹总要接真实广告主，adSpot 存在则显广告，否则降级热门文章）
+  const heroAd = await getAdSpotByKey('homepage-hero');
   
   // 取部分推荐工具到 Hero 区
   const featuredTools = tools.filter((t: any) => t.discount).slice(0, 8);
@@ -90,49 +93,78 @@ export default async function HomePage() {
                     <div className="text-xs text-slate-500 mt-1">公众号粉丝</div>
                   </div>
                 </div>
-                {/* 热门文章侧栏（v11.35 2026-06-15：A 点位，首屏 PC 端强感知） */}
-                {hotArticles[0] && (
-                  <Link
-                    href={`/articles/${hotArticles[0].slug}`}
-                    className="hidden lg:block bg-white border border-slate-200 rounded-xl p-4 hover:border-brand-400 hover:shadow-md transition-all group"
+                {/* A 点位：真实广告位（v11.37 2026-06-15：曹总要接广告主）or 降级热门文章（v11.35 兜底） */}
+                {heroAd && heroAd.imageUrl ? (
+                  /* 真实广告卡 */
+                  <a
+                    href={heroAd.linkUrl || '#'}
+                    target="_blank"
+                    rel="noopener noreferrer sponsored"
+                    className="hidden lg:block bg-white border border-slate-200 rounded-xl overflow-hidden hover:border-brand-400 hover:shadow-md transition-all group"
                   >
-                    <div className="flex items-center gap-1.5 mb-3">
-                      <Flame className="w-4 h-4 text-orange-500" />
-                      <span className="text-xs font-bold text-slate-900">热门文章</span>
-                      <ChevronRight className="w-3 h-3 text-slate-400 ml-auto group-hover:text-brand-600 transition-colors" />
-                    </div>
-                    {hotArticles[0].cover ? (
-                      <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-slate-100 mb-3">
-                        <Image
-                          src={hotArticles[0].cover}
-                          alt={hotArticles[0].title}
-                          fill
-                          className="object-cover"
-                          sizes="(max-width: 1024px) 0px, 320px"
-                        />
+                    <div className="relative w-full aspect-video bg-slate-100">
+                      <Image
+                        src={heroAd.imageUrl}
+                        alt={heroAd.name}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 1024px) 0px, 320px"
+                      />
+                      {/* 角标：广告 */}
+                      <div className="absolute top-2 right-2 px-2 py-0.5 bg-black/60 text-white text-[10px] rounded">
+                        广告
                       </div>
-                    ) : (
-                      <div className="w-full aspect-video rounded-lg bg-gradient-to-br from-brand-100 to-accent-100 mb-3 flex items-center justify-center">
-                        <FileText className="w-10 h-10 text-brand-500" />
-                      </div>
-                    )}
-                    <h3 className="text-sm font-semibold text-slate-900 line-clamp-2 group-hover:text-brand-600 transition-colors mb-2 min-h-[2.5rem]">
-                      {hotArticles[0].title}
-                    </h3>
-                    <p className="text-xs text-slate-500 line-clamp-2 mb-3 min-h-[2rem]">
-                      {hotArticles[0].excerpt}
-                    </p>
-                    <div className="flex items-center gap-3 text-xs text-slate-400 pt-2 border-t border-slate-100">
-                      <span className="flex items-center gap-1">
-                        <Eye className="w-3 h-3" />
-                        {hotArticles[0].viewCount || 0}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {relativeTime(hotArticles[0].publishedAt)}
-                      </span>
                     </div>
-                  </Link>
+                    <div className="p-3 flex items-center justify-between">
+                      <span className="text-xs text-slate-500 line-clamp-1">{heroAd.name}</span>
+                      <ChevronRight className="w-3 h-3 text-slate-400 group-hover:text-brand-600 transition-colors flex-shrink-0" />
+                    </div>
+                  </a>
+                ) : (
+                  /* 降级：热门文章侧栏（曹总还没填广告时回退到 v11.35 视觉） */
+                  hotArticles[0] && (
+                    <Link
+                      href={`/articles/${hotArticles[0].slug}`}
+                      className="hidden lg:block bg-white border border-slate-200 rounded-xl p-4 hover:border-brand-400 hover:shadow-md transition-all group"
+                    >
+                      <div className="flex items-center gap-1.5 mb-3">
+                        <Flame className="w-4 h-4 text-orange-500" />
+                        <span className="text-xs font-bold text-slate-900">热门文章</span>
+                        <ChevronRight className="w-3 h-3 text-slate-400 ml-auto group-hover:text-brand-600 transition-colors" />
+                      </div>
+                      {hotArticles[0].cover ? (
+                        <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-slate-100 mb-3">
+                          <Image
+                            src={hotArticles[0].cover}
+                            alt={hotArticles[0].title}
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 1024px) 0px, 320px"
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-full aspect-video rounded-lg bg-gradient-to-br from-brand-100 to-accent-100 mb-3 flex items-center justify-center">
+                          <FileText className="w-10 h-10 text-brand-500" />
+                        </div>
+                      )}
+                      <h3 className="text-sm font-semibold text-slate-900 line-clamp-2 group-hover:text-brand-600 transition-colors mb-2 min-h-[2.5rem]">
+                        {hotArticles[0].title}
+                      </h3>
+                      <p className="text-xs text-slate-500 line-clamp-2 mb-3 min-h-[2rem]">
+                        {hotArticles[0].excerpt}
+                      </p>
+                      <div className="flex items-center gap-3 text-xs text-slate-400 pt-2 border-t border-slate-100">
+                        <span className="flex items-center gap-1">
+                          <Eye className="w-3 h-3" />
+                          {hotArticles[0].viewCount || 0}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {relativeTime(hotArticles[0].publishedAt)}
+                        </span>
+                      </div>
+                    </Link>
+                  )
                 )}
               </div>
             </div>
