@@ -53,6 +53,8 @@ export default async function EditArticlePage({
     isReposted: article.isReposted,
     sourceUrl: article.sourceUrl,
     baiduPushedAt: article.baiduPushedAt?.toISOString() || null,
+    // v11.32.1 预览用
+    publishedAt: article.publishedAt?.toISOString() || null,
   };
 
   return (

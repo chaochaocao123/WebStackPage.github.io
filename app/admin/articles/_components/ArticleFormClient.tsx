@@ -64,6 +64,8 @@ type InitialData = {
   baiduPushedAt?: string | null;
   // v11.32 草稿状态
   status?: 'draft' | 'published' | string;
+  // v11.32.1 预览用：发布时间（编辑模式有，新建模式无）
+  publishedAt?: string | null;
   // v11.33 Word 导入预填字段（URL query string 传入）
   prefillTitle?: string;
   prefillSlug?: string;
@@ -220,6 +222,33 @@ export function ArticleFormClient({ initialData, formAction, draftAction, delete
       }
       // 推送完成后 quota 自动刷新（依赖 pushPending 变化触发的 useEffect）
     });
+  };
+
+  // v11.32.1 文章实时预览（解决 v11.32 跳 /articles/{slug} 在新建/草稿时 404）
+  // 写 sessionStorage → 新窗口 /preview/article 同源可读
+  const openPreview = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    const previewData = {
+      title,
+      slug,
+      excerpt,
+      content,
+      cover,
+      category,
+      author,
+      tags,
+      publishedAt: initialData?.publishedAt || new Date().toISOString(),
+      status: initialData?.status || 'draft',
+      isReposted,
+      sourceUrl,
+    };
+    try {
+      sessionStorage.setItem('kjgjs_article_preview', JSON.stringify(previewData));
+      window.open('/preview/article', '_blank', 'noopener,noreferrer');
+    } catch (err) {
+      console.error('[preview] 写 sessionStorage 失败', err);
+      alert('浏览器不支持 sessionStorage，请换一个现代浏览器');
+    }
   };
 
   // SEO 计算
@@ -649,11 +678,11 @@ export function ArticleFormClient({ initialData, formAction, draftAction, delete
               </div>
               {isEdit && initialData?.id && (
                 <a
-                  href={`/articles/${slug || initialData.slug}?preview=1`}
-                  target="_blank"
+                  href="/preview/article"
+                  onClick={openPreview}
                   rel="noreferrer"
                   className="inline-flex items-center gap-1 text-xs text-brand-600 hover:underline"
-                  title="新窗口打开实际详情页（未鉴权，但能看到真实渲染）"
+                  title="新窗口打开实时预览（基于当前编辑页内容，不影响数据库）"
                 >
                   <ExternalLink className="w-3 h-3" />
                   新窗口打开
@@ -712,8 +741,8 @@ export function ArticleFormClient({ initialData, formAction, draftAction, delete
                   />
                   <p className="text-xs text-slate-400 mt-2 italic">
                     ↑ 截断显示前 ~20 行，<a
-                      href={`/articles/${slug || 'preview'}${isEdit ? `?preview=1` : ''}`}
-                      target="_blank"
+                      href="/preview/article"
+                      onClick={openPreview}
                       rel="noreferrer"
                       className="text-brand-600 hover:underline"
                     >新窗口打开看完整</a>
