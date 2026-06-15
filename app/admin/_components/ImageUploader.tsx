@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useRef } from 'react';
-import { Upload, Loader2, X, AlertCircle } from 'lucide-react';
+import { useState, useRef, ReactNode } from 'react';
+import { Upload, Loader2, X, AlertCircle, Info } from 'lucide-react';
 
 interface ImageUploaderProps {
   /** 表单字段名（提交时的 input name） */
@@ -15,7 +15,9 @@ interface ImageUploaderProps {
   /** 接受的文件类型 */
   accept?: string;
   /** 提示文字（灰色小字，写在 label 后面） */
-  hint?: string;
+  hint?: ReactNode;
+  /** 鼠标浮动显示的详细建议（典型用途：图片尺寸/比例/格式要求） */
+  infoTip?: ReactNode;
 }
 
 /**
@@ -43,6 +45,7 @@ export function ImageUploader({
   placeholder = 'https://...',
   accept = 'image/jpeg,image/jpg,image/png,image/gif,image/webp,image/svg+xml',
   hint,
+  infoTip,
 }: ImageUploaderProps) {
   const [value, setValue] = useState<string>(defaultValue || '');
   const [uploading, setUploading] = useState(false);
@@ -88,6 +91,17 @@ export function ImageUploader({
         {hint && (
           <span className="text-xs text-slate-500 font-normal ml-2">
             {hint}
+          </span>
+        )}
+        {infoTip && (
+          <span className="relative inline-flex items-center justify-center w-4 h-4 ml-1.5 group cursor-help align-middle">
+            <Info className="w-3.5 h-3.5 text-slate-400 group-hover:text-brand-600" />
+            <span
+              role="tooltip"
+              className="invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-opacity duration-150 absolute z-20 left-0 top-6 w-80 p-3 bg-slate-900 text-white text-xs rounded-lg shadow-xl whitespace-pre-line leading-relaxed pointer-events-none"
+            >
+              {infoTip}
+            </span>
           </span>
         )}
       </label>

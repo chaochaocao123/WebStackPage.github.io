@@ -60,6 +60,17 @@ export default async function EditAdSpotPage({
             defaultValue={adSpot.imageUrl}
             placeholder="https://..."
             hint="支持直接上传到 Vercel Blob 或粘 URL"
+            infoTip={`📐 广告位图片建议
+
+• 比例：16:9（与广告位容器完全一致，零裁剪）
+• 尺寸：1280×720 像素（推荐，Retina 屏清晰）
+        640×360 像素（最低，1x DPR）
+• 格式：JPG（适合照片，文件小）
+• 大小：< 200KB（避免拖慢首屏）
+• 内容：主体居中，四周留安全区
+
+❌ 错误：3002×888 等超长横幅会被裁剪成中间一条
+✅ 正确：16:9 比例的图会完整显示无裁剪`}
           />
 
           <div>
