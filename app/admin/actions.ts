@@ -601,6 +601,7 @@ export async function updateAdSpot(id: number, formData: FormData) {
   });
 
   revalidatePath('/admin/ads'); revalidatePath('/admin');
+  revalidatePath('/');  // v11.37.1 修复：广告位改动需让首页 ISR 立即刷新
   redirect('/admin/ads');
 }
 
