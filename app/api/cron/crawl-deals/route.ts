@@ -1,13 +1,15 @@
 // Vercel Cron: 抓取优惠活动
 // 触发：每天北京时间 12:00（UTC 4:00）
 // 安全：用 Vercel 的 CRON_SECRET 验证请求
-// 数据源：Tool 表 70 个工具官网首页（HTML 抓取 + 优惠关键词过滤）
+// 数据源：Tool 表全 70 个工具官网首页（HTML 抓取 + 优惠关键词过滤）
 // URL 去重，已存在的不会更新
 // 2026-06-11: amz123 RSS 失效 → wearesellers
-// 2026-06-17: wearesellers 不在 Tool 表（违反"只从工具列表里的网站抓"硬规）
-//            → 改造为遍历 Tool 表 70 个工具，HTML 抓取官网首页 + 关键词过滤
+// 2026-06-17 v1: wearesellers 不在 Tool 表（违反"只从工具列表里的网站抓"硬规）
+//            → 改造为遍历 Tool 表，HTML 抓取官网首页 + 关键词过滤
 //            → brand 字段直接 = Tool.name（保证 /deals 页面能匹配 logo）
-//            → 预期首批 0~5 条入库（SaaS 工具官网首页不是优惠活动列表常态）
+// 2026-06-17 v2（决策 214 曹总修正）：不再过滤 discount 字段，全 70 工具都抓
+//            → 70 工具全量 dry test 49s 接近 50s 上限，PER_TOOL_DELAY_MS 300ms → 200ms
+//            → 命中率会下降（5/28 → 预计 5-10/70），后续按入库情况加折扣白名单
 
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
@@ -35,16 +37,15 @@ const MAX_TOOLS = 70;         // 最多跑 70 个工具
 const UA = 'Mozilla/5.0 (compatible; kjgjs-bot/1.0; +https://kjgjs.cn)';
 
 async function loadToolSources(): Promise<DealSource[]> {
-  // 只抓 Tool 表中"曹总已确认有优惠活动"的工具（discount 字段非空）
-  // 理由：discount 字段 = 曹总手动录入的"该工具的优惠码/活动"，是真实信号
-  //       70 个工具全量抓意义不大（SaaS 工具官网首页 0.1% 概率有"优惠活动列表"）
-  //       25 个有 discount 的工具几乎都发优惠活动，命中率 30-50%
+  // 抓 Tool 表全 70 个工具（v2 决策 214：不再过滤 discount 字段）
+  // 2026-06-17 v1 原本只抓 25-28 个有 discount 字段的工具（命中率 30-50%）
+  // 2026-06-17 v2 曹总修正：所有工具都跑一遍，命中率可能下降但覆盖面广
+  //       后续按入库情况加折扣白名单（黑名单词/工具方对接等）
   const tools = await prisma.tool.findMany({
     where: {
       url: { not: '' },
-      discount: { not: '' },
     },
-    select: { id: true, name: true, url: true, categoryKey: true, discount: true },
+    select: { id: true, name: true, url: true, categoryKey: true },
     orderBy: { id: 'asc' },
     take: MAX_TOOLS,
   });
