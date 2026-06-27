@@ -50,9 +50,10 @@ function toItem(row: any): ArticleItem {
   };
 }
 
-/** 公开列表：按发布时间倒序 */
+/** 公开列表：按发布时间倒序，仅 published */
 export async function getArticlesFromDB(limit = 60): Promise<ArticleItem[]> {
   const rows = await prisma.article.findMany({
+    where: { status: 'published' },
     orderBy: { publishedAt: 'desc' },
     take: limit,
   });

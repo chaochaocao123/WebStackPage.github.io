@@ -22,7 +22,7 @@ export const dynamicParams = true;
 
 /** v11.14 SSG 化：build 时预渲染所有 article slug */
 export async function generateStaticParams() {
-  const articles = await prisma.article.findMany({ select: { slug: true } });
+  const articles = await prisma.article.findMany({ select: { slug: true }, where: { status: 'published' } });
   return articles.map(a => ({ slug: a.slug }));
 }
 
