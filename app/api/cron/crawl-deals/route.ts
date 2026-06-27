@@ -15,6 +15,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import * as cheerio from 'cheerio';
 
+// 2026-06-27 曹总指令：停用 crawl-deals cron，后续恢复删除此行即可
+export async function GET() {
+  return new Response('crawl-deals disabled by owner', { status: 200 });
+}
+
+const __DISABLED = true;
+const KEYWORD_RE = /优惠|折扣|code|coupon|discount|折|限时|活动|立减|新人|专享|领券|补贴/i;
+
+/* 以下原代码已停用，保留作后续恢复参考 */
+
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
@@ -192,7 +202,7 @@ async function crawlFromHtml(feed: DealSource): Promise<number> {
   }
 }
 
-export async function GET(request: NextRequest) {
+/* [DISABLED] export async function GET(request: NextRequest) {
   // 验证 Vercel Cron 密钥
   const authHeader = request.headers.get('authorization');
   if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -249,6 +259,7 @@ export async function GET(request: NextRequest) {
   });
 }
 
-export async function POST(request: NextRequest) {
+/* [DISABLED] export async function POST(request: NextRequest) {
   return GET(request);
 }
+*/
