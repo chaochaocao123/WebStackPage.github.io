@@ -20,9 +20,6 @@ export async function GET() {
   return new Response('crawl-deals disabled by owner', { status: 200 });
 }
 
-const __DISABLED = true;
-const KEYWORD_RE = /优惠|折扣|code|coupon|discount|折|限时|活动|立减|新人|专享|领券|补贴/i;
-
 /* 以下原代码已停用，保留作后续恢复参考 */
 
 export const dynamic = 'force-dynamic';
