@@ -28,9 +28,6 @@ export default async function HomePage() {
   const hotArticles = await getHotArticles(3);
   // 首页 Hero 右侧广告位（v11.37 2026-06-15：曹总要接真实广告主，adSpot 存在则显广告，否则降级热门文章）
   const heroAd = await getAdSpotByKey('homepage-hero');
-  
-  // 取部分推荐工具到 Hero 区
-  const featuredTools = tools.filter((t: any) => t.discount).slice(0, 8);
   // 2026-06-15 v11.34: 删首页工具分类 Tab（曹总：与下方"全部工具"分类筛选重复，没意义）
 
   return (
@@ -158,26 +155,6 @@ export default async function HomePage() {
 
         {/* 优化9：自动滚动资讯区域 */}
         <MarqueeNews news={latestNews} />
-
-        {/* 限时优惠工具 */}
-        {featuredTools.length > 0 && (
-          <section className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
-            <div className="flex items-center justify-between mb-5">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center">
-                  <Gift className="w-4 h-4 text-white" />
-                </div>
-                <h2 className="text-xl font-bold text-slate-900">限时优惠工具</h2>
-                <span className="text-xs text-slate-400">使用「跨境工具说」专属优惠码</span>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-              {featuredTools.map((tool: any) => (
-                <ToolCard key={tool.name} tool={tool} showCategory={true} />
-              ))}
-            </div>
-          </section>
-        )}
 
         {/* 热门文章模块（v11.35 2026-06-15：B 点位，限时优惠之后 + 全部工具之前） */}
         {hotArticles.length > 0 && (
