@@ -170,9 +170,6 @@ export default async function HomePage() {
                 <h2 className="text-xl font-bold text-slate-900">限时优惠工具</h2>
                 <span className="text-xs text-slate-400">使用「跨境工具说」专属优惠码</span>
               </div>
-              <Link href="/deals" className="text-sm text-brand-600 hover:underline flex items-center gap-1">
-                查看全部 <ChevronRight className="w-4 h-4" />
-              </Link>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
               {featuredTools.map((tool: any) => (
