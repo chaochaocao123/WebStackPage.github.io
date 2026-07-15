@@ -1,18 +1,12 @@
 // 强制刷新 ISR 缓存
 // POST /api/admin/revalidate
-// 用于后台手动刷新 API 缓存
+// 用于后台手动刷新 API 缓存（插件数据同步）
 
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 
 export async function POST(request: NextRequest) {
   try {
-    // 验证请求来源（简单校验，可以添加更严格的认证）
-    const authHeader = request.headers.get('authorization');
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-    }
-
     // 刷新所有需要缓存的路径
     revalidatePath('/api/coupon-data');
     revalidatePath('/api/mobile/tools');
