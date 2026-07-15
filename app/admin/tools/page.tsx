@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { Plus, Search, ExternalLink, Star } from 'lucide-react';
 import { Pagination, ADMIN_PAGE_SIZE } from '../_components/Pagination';
 import { ToolRowRefreshButton, BatchRefreshButton } from './_components/LogoRefreshButtons';
+import { CacheRefreshButton } from './_components/CacheRefreshButton';
 
 // 强制动态渲染，避免 Router Cache 导致翻页时统计过时
 export const dynamic = 'force-dynamic';
@@ -63,6 +64,7 @@ export default async function ToolsPage({
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <CacheRefreshButton />
           <BatchRefreshButton />
           <Link
             href="/admin/tools/new"
